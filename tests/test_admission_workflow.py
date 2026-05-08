@@ -3,8 +3,8 @@ Admission workflow tests.
 
 Run with: pytest tests/ -v
 
-Tests use the EpicClient stub (no real API calls) and mock the Anthropic
-client so no API key is needed for unit tests.
+Tests use the EpicClient stub (no real API calls) and mock the LLM backend
+so no API key is needed for unit tests.
 """
 
 import json
@@ -17,6 +17,7 @@ from context.session import PatientSession, WorkflowState
 from tools.epic import EpicClient
 from workflows.engine import WorkflowEngine, WorkflowStep
 from workflows.admission import ADMISSION_STEPS
+from llm import LLMBackend, LLMResponse
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
@@ -39,18 +40,16 @@ def patient_session(sample_patient) -> PatientSession:
 
 
 @pytest.fixture
-def mock_anthropic_client():
-    """Returns a mock Anthropic client that returns a canned response."""
-    client = MagicMock()
-    response = MagicMock()
-    response.content = [MagicMock(text="Mock agent output for testing.")]
-    response.usage = MagicMock(
+def mock_backend():
+    """Returns a mock LLM backend."""
+    backend = MagicMock(spec=LLMBackend)
+    backend.generate.return_value = LLMResponse(
+        content="Mock agent output for testing.",
         input_tokens=100,
         output_tokens=50,
-        cache_read_input_tokens=0,
+        cache_read_tokens=0,
     )
-    client.messages.create.return_value = response
-    return client
+    return backend
 
 
 class TestEpicStub:
@@ -86,25 +85,26 @@ class TestPatientSession:
 
 
 class TestWorkflowEngine:
-    def test_engine_runs_all_steps(self, patient_session, mock_anthropic_client):
+    def test_engine_runs_all_steps(self, patient_session, mock_backend):
         steps = [
             WorkflowStep(name="step_one", agent_class=_make_stub_agent("step_one")),
             WorkflowStep(name="step_two", agent_class=_make_stub_agent("step_two"), context_keys=["step_one"]),
         ]
-        engine = WorkflowEngine(client=mock_anthropic_client, wiki="")
+        engine = WorkflowEngine(backend=mock_backend, model="test-model", wiki="")
         state = engine.run(steps, patient_session)
 
         assert state.status == "complete"
         assert "step_one" in state.outputs
         assert "step_two" in state.outputs
 
-    def test_context_keys_are_passed_to_later_steps(self, patient_session, mock_anthropic_client):
+    def test_context_keys_are_passed_to_later_steps(self, patient_session, mock_backend):
         """Verifies that a step's output is available to subsequent steps."""
         captured_contexts = {}
 
         class CapturingAgent:
-            def __init__(self, client):
-                self.client = client
+            def __init__(self, backend, model):
+                self.backend = backend
+                self.model = model
 
             @property
             def name(self):
@@ -119,7 +119,7 @@ class TestWorkflowEngine:
             WorkflowStep(name="step_one", agent_class=_make_stub_agent("step_one")),
             WorkflowStep(name="step_two", agent_class=CapturingAgent, context_keys=["step_one"]),
         ]
-        engine = WorkflowEngine(client=mock_anthropic_client, wiki="")
+        engine = WorkflowEngine(backend=mock_backend, model="test-model", wiki="")
         engine.run(steps, patient_session)
 
         assert "step_one" in captured_contexts["step_two"]
@@ -148,8 +148,9 @@ def _make_stub_agent(agent_name: str):
     from agents.base import AgentOutput
 
     class StubAgent:
-        def __init__(self, client):
-            self.client = client
+        def __init__(self, backend, model):
+            self.backend = backend
+            self.model = model
 
         @property
         def name(self):

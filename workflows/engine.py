@@ -1,9 +1,7 @@
-import json
 from dataclasses import dataclass, field
 from typing import Optional, Type
 
-import anthropic
-
+from llm.base import LLMBackend
 from agents.base import BaseAgent
 from context.session import PatientSession, WorkflowState
 
@@ -35,8 +33,9 @@ class WorkflowEngine:
     call engine.run(steps, session). The engine never needs to change.
     """
 
-    def __init__(self, client: anthropic.Anthropic, wiki: str = ""):
-        self.client = client
+    def __init__(self, backend: LLMBackend, model: str, wiki: str = ""):
+        self.backend = backend
+        self.model = model
         self.wiki = wiki
 
     def run(self, steps: list[WorkflowStep], session: PatientSession) -> WorkflowState:
@@ -44,7 +43,7 @@ class WorkflowEngine:
 
         for step in steps:
             print(f"  → running {step.name}...")
-            agent = step.agent_class(self.client)
+            agent = step.agent_class(self.backend, self.model)
             context = self._build_context(step, session, state)
             output = agent.run(context, self.wiki)
             state.outputs[step.name] = output.content

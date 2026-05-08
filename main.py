@@ -17,11 +17,11 @@ import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
-import anthropic
 
 from context.session import PatientSession
 from tools.epic import EpicClient
 from wiki.loader import load_wiki
+from llm import AnthropicBackend, GeminiBackend
 from workflows.engine import WorkflowEngine
 from workflows.admission import ADMISSION_STEPS
 from workflows.discharge import DISCHARGE_STEPS
@@ -66,14 +66,27 @@ def main():
     parser.add_argument("workflow", choices=list(WORKFLOWS.keys()), help="Workflow to run")
     parser.add_argument("--patient", default="TEST-001", help="Patient ID (default: TEST-001)")
     parser.add_argument("--doctor", default="default", help="Doctor wiki profile to load")
+    parser.add_argument("--llm", choices=["anthropic", "gemini"], default="anthropic", help="LLM provider to use")
+    parser.add_argument("--model", help="Specific model to use (optional)")
     args = parser.parse_args()
 
-    api_key = os.getenv("ANTHROPIC_API_KEY")
-    if not api_key:
-        print("Error: ANTHROPIC_API_KEY not set. Copy .env.example to .env and add your key.")
-        sys.exit(1)
+    if args.llm == "anthropic":
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not api_key:
+            print("Error: ANTHROPIC_API_KEY not set.")
+            sys.exit(1)
+        backend = AnthropicBackend(api_key=api_key)
+        model = args.model or os.getenv("MODEL", "claude-opus-4-7")
+    else:
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            print("Error: GEMINI_API_KEY not set.")
+            sys.exit(1)
+        backend = GeminiBackend(api_key=api_key)
+        model = args.model or os.getenv("MODEL", "gemini-3.1-flash-lite")
 
     print(f"\nPhysician AI — running '{args.workflow}' workflow for patient {args.patient}")
+    print(f"LLM Provider: {args.llm} (model: {model})")
     print(f"Loading doctor wiki: {args.doctor}")
 
     wiki = load_wiki(args.doctor)
@@ -86,8 +99,7 @@ def main():
     epic = EpicClient()
     session = build_session(args.patient, epic)
 
-    client = anthropic.Anthropic(api_key=api_key)
-    engine = WorkflowEngine(client=client, wiki=wiki)
+    engine = WorkflowEngine(backend=backend, model=model, wiki=wiki)
 
     steps = WORKFLOWS[args.workflow]
     print(f"\nRunning {len(steps)} steps:\n")

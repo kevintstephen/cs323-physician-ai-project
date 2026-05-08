@@ -1,11 +1,7 @@
-import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-import anthropic
-
-
-DEFAULT_MODEL = os.getenv("MODEL", "claude-opus-4-7")
+from llm.base import LLMBackend, LLMResponse
 
 
 @dataclass
@@ -26,16 +22,12 @@ class BaseAgent(ABC):
       - system_prompt: the role/persona/instructions for this agent
       - format_prompt(): how to turn the workflow context into a user message
 
-    The base class handles the Anthropic API call with prompt caching:
-      - The system prompt is cached (stable across calls)
-      - The doctor's wiki is cached (stable within a session)
-      - Only the patient-specific user message is uncached
+    The base class handles the LLM backend call.
     """
 
-    model: str = DEFAULT_MODEL
-
-    def __init__(self, client: anthropic.Anthropic):
-        self.client = client
+    def __init__(self, backend: LLMBackend, model: str):
+        self.backend = backend
+        self.model = model
 
     @property
     @abstractmethod
@@ -53,34 +45,17 @@ class BaseAgent(ABC):
         pass
 
     def run(self, context: dict, wiki: str = "") -> AgentOutput:
-        system_blocks = [
-            {
-                "type": "text",
-                "text": self.system_prompt,
-                "cache_control": {"type": "ephemeral"},
-            }
-        ]
-        if wiki:
-            system_blocks.append(
-                {
-                    "type": "text",
-                    "text": f"## Doctor's Wiki\n\n{wiki}",
-                    "cache_control": {"type": "ephemeral"},
-                }
-            )
-
-        response = self.client.messages.create(
+        response = self.backend.generate(
             model=self.model,
-            max_tokens=2048,
-            system=system_blocks,
-            messages=[{"role": "user", "content": self.format_prompt(context)}],
+            system_prompt=self.system_prompt,
+            wiki=wiki,
+            user_prompt=self.format_prompt(context)
         )
 
-        usage = response.usage
         return AgentOutput(
             agent_name=self.name,
-            content=response.content[0].text,
-            input_tokens=usage.input_tokens,
-            output_tokens=usage.output_tokens,
-            cache_read_tokens=getattr(usage, "cache_read_input_tokens", 0),
+            content=response.content,
+            input_tokens=response.input_tokens,
+            output_tokens=response.output_tokens,
+            cache_read_tokens=response.cache_read_tokens,
         )

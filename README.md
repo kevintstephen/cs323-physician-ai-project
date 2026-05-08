@@ -18,10 +18,10 @@ pip install -r requirements.txt
 
 # 4. Set up your API key
 cp .env.example .env
-# Edit .env and add your ANTHROPIC_API_KEY
+# Edit .env and add your ANTHROPIC_API_KEY or GEMINI_API_KEY
 
 # 5. Run the admission workflow on sample patient data
-python main.py admission --patient TEST-001
+python main.py admission --patient TEST-001 --llm (gemini or default:anthropic)
 ```
 
 The sample patient (TEST-001) is a 67-year-old CHF patient — a realistic EM case based on our physician interviews. No real patient data is used.
