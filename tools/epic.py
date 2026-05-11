@@ -32,6 +32,13 @@ class EpicClient:
         # TODO: GET /Patient/{patient_id}
         raise NotImplementedError("Epic API integration not yet implemented")
 
+    def get_discharge_patient(self, patient_id: str) -> dict:
+        """Returns full inpatient course data for discharge workflows."""
+        if self._stub_mode:
+            return self._load_fixture("sample_discharge_patient.json")
+        # TODO: GET /Encounter/{encounter_id} with full inpatient course
+        raise NotImplementedError("Epic API integration not yet implemented")
+
     def get_labs(self, patient_id: str, encounter_id: str = "") -> dict:
         """Returns current lab results."""
         if self._stub_mode:

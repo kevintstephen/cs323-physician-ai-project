@@ -36,8 +36,11 @@ WORKFLOWS = {
 }
 
 
-def build_session(patient_id: str, epic: EpicClient) -> PatientSession:
-    patient_data = epic.get_patient(patient_id)
+def build_session(patient_id: str, epic: EpicClient, workflow: str = "") -> PatientSession:
+    if workflow == "discharge":
+        patient_data = epic.get_discharge_patient(patient_id)
+    else:
+        patient_data = epic.get_patient(patient_id)
     return PatientSession(
         patient_id=patient_id,
         patient_data=patient_data,
@@ -97,7 +100,7 @@ def main():
 
     print("Connecting to Epic (stub mode)...")
     epic = EpicClient()
-    session = build_session(args.patient, epic)
+    session = build_session(args.patient, epic, workflow=args.workflow)
 
     engine = WorkflowEngine(backend=backend, model=model, wiki=wiki)
 
