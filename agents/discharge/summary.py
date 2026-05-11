@@ -65,10 +65,10 @@ Available information: [brief description].' rather than filling in a hollow tem
     def format_prompt(self, context: dict) -> str:
         patient = context["patient_data"]
         return f"""Patient ID: {context["patient_id"]}
-Name: {patient.get("name")} | Age: {patient.get("age")} | Sex: {patient.get("sex")}
-Admission date: {patient.get("admission_date", "[Not available]")}
-Discharge date: {patient.get("discharge_date", "[Not available]")}
-Admitting diagnosis: {patient.get("admitting_diagnosis", "[Not available]")}
+Name: {patient.get("name", "[Not available]")} | Age: {patient.get("age", "[Not available]")} | Sex: {patient.get("sex", "[Not available]")}
+Admission date: {patient.get("admission_date", "[Not available — verify in chart]")}
+Discharge date: {patient.get("discharge_date", "[Not available — verify in chart]")}
+Admitting diagnosis: {patient.get("admitting_diagnosis", "[Not available — verify in chart]")}
 
 Past medical history:
 {json.dumps(patient.get("pmh", []), indent=2)}
@@ -104,6 +104,6 @@ Medications administered:
 {json.dumps(patient.get("medications_administered", []), indent=2)}
 
 Prior hospitalizations:
-{json.dumps(context["prior_history"], indent=2)}
+{json.dumps(context.get("prior_history", []), indent=2)}
 
 Please draft the hospital course summary."""
