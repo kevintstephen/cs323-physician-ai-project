@@ -70,14 +70,23 @@ Admission date: {patient.get("admission_date", "[Not available]")}
 Discharge date: {patient.get("discharge_date", "[Not available]")}
 Admitting diagnosis: {patient.get("admitting_diagnosis", "[Not available]")}
 
+Past medical history:
+{json.dumps(patient.get("pmh", []), indent=2)}
+
+Allergies:
+{json.dumps(patient.get("allergies", []), indent=2)}
+
+Home medications (prior to admission):
+{json.dumps(patient.get("current_medications", []), indent=2)}
+
 Vitals at admission:
 {json.dumps(patient.get("vitals_at_admission", {}), indent=2)}
 
 ED physician notes:
-{context.get("ed_notes", "None")}
+{context.get("ed_notes", "[Not available — verify in chart]")}
 
 Overnight handoff notes:
-{context.get("handoff_notes", "None")}
+{context.get("handoff_notes", "[Not available — verify in chart]")}
 
 Daily progress notes:
 {json.dumps(patient.get("daily_progress_notes", []), indent=2)}
