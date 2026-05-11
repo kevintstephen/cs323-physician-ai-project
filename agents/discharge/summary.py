@@ -65,12 +65,13 @@ Available information: [brief description].' rather than filling in a hollow tem
     def format_prompt(self, context: dict) -> str:
         patient = context["patient_data"]
         return f"""Patient ID: {context["patient_id"]}
+Name: {patient.get("name")} | Age: {patient.get("age")} | Sex: {patient.get("sex")}
+Admission date: {patient.get("admission_date", "[Not available]")}
+Discharge date: {patient.get("discharge_date", "[Not available]")}
+Admitting diagnosis: {patient.get("admitting_diagnosis", "[Not available]")}
 
-Patient data at admission:
-{json.dumps(patient, indent=2)}
-
-Prior hospitalizations:
-{json.dumps(context["prior_history"], indent=2)}
+Vitals at admission:
+{json.dumps(patient.get("vitals_at_admission", {}), indent=2)}
 
 ED physician notes:
 {context.get("ed_notes", "None")}
@@ -78,4 +79,22 @@ ED physician notes:
 Overnight handoff notes:
 {context.get("handoff_notes", "None")}
 
-Please draft the hospital course summary. Note: full inpatient course data from Epic integration is not yet wired up — use available data and mark missing sections with [DATA NEEDED]."""
+Daily progress notes:
+{json.dumps(patient.get("daily_progress_notes", []), indent=2)}
+
+Nursing notes:
+{json.dumps(patient.get("nursing_notes", []), indent=2)}
+
+Lab results (chronological):
+{json.dumps(patient.get("lab_results", []), indent=2)}
+
+Consult notes:
+{json.dumps(patient.get("consult_notes", []), indent=2)}
+
+Medications administered:
+{json.dumps(patient.get("medications_administered", []), indent=2)}
+
+Prior hospitalizations:
+{json.dumps(context["prior_history"], indent=2)}
+
+Please draft the hospital course summary."""
