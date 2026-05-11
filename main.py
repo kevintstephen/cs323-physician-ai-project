@@ -44,9 +44,9 @@ def build_session(patient_id: str, epic: EpicClient, workflow: str = "") -> Pati
     return PatientSession(
         patient_id=patient_id,
         patient_data=patient_data,
-        prior_history=epic.get_prior_hospitalizations(patient_id),
-        ed_notes=epic.get_ed_notes(patient_id),
-        handoff_notes=epic.get_handoff_notes(patient_id),
+        prior_history=patient_data.get("prior_hospitalizations") or epic.get_prior_hospitalizations(patient_id),
+        ed_notes=patient_data.get("ed_assessment") or epic.get_ed_notes(patient_id),
+        handoff_notes=patient_data.get("handoff_notes") or epic.get_handoff_notes(patient_id),
     )
 
 
