@@ -3,6 +3,7 @@ from agents.admission.lab_interpretation import LabInterpretationAgent
 from agents.admission.ed_note_synthesis import EDNoteSynthesisAgent
 from agents.admission.consultant_routing import ConsultantRoutingAgent
 from agents.admission.note_drafter import NoteDrafterAgent
+from agents.admission.action_extraction import ActionExtractionAgent
 from agents.safety import SafetyAgent
 from workflows.engine import WorkflowStep
 
@@ -14,7 +15,12 @@ from workflows.engine import WorkflowStep
 # critique the ED note, figure out who to call, write the H&P.
 #
 # Steps 1-3 are independent and could run in parallel (parallel_group=1).
-# Steps 4-6 are sequential, each depending on all prior outputs.
+# Steps 4-7 are sequential, each depending on all prior outputs.
+#
+# Step 7 — ActionExtractionAgent
+#   Reads ALL prior outputs (including safety check) and converts them into
+#   a structured, prioritized action list. This is what the physician sees
+#   first — not the raw agent outputs.
 # ---------------------------------------------------------------------------
 
 ADMISSION_STEPS: list[WorkflowStep] = [
@@ -47,5 +53,13 @@ ADMISSION_STEPS: list[WorkflowStep] = [
         name="safety_check",
         agent_class=SafetyAgent,
         context_keys=["note_draft"],
+    ),
+    WorkflowStep(
+        name="action_extraction",
+        agent_class=ActionExtractionAgent,
+        context_keys=[
+            "chart_review", "lab_interpretation", "ed_note_synthesis",
+            "consultant_routing", "note_draft", "safety_check",
+        ],
     ),
 ]
