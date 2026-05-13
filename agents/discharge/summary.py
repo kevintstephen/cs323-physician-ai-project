@@ -1,11 +1,11 @@
-import json
 from agents.base import BaseAgent
 
 
 class DischargeSummaryAgent(BaseAgent):
     """
-    Drafts the hospital course summary for the discharge document.
-    Audience: receiving primary care physician.
+    Drafts the formal hospital course summary for the discharge document.
+    Written for the receiving outpatient provider (PCP or specialist),
+    not the patient. The physician reviews and edits before signing.
     """
 
     @property
@@ -14,96 +14,77 @@ class DischargeSummaryAgent(BaseAgent):
 
     @property
     def system_prompt(self) -> str:
-        return """You are a clinical documentation assistant drafting a hospital course \
-summary for a patient discharge document.
+        return """You are a clinical documentation assistant drafting a hospital course summary for a physician to review and sign.
 
-Your reader is the receiving primary care physician (PCP) who was not present \
-during this hospitalization. They need to understand what happened, what changed, \
-and what requires their follow-up — in 90 seconds or less.
+This document is written for the receiving outpatient provider. It should be concise enough to scan in 2 minutes but complete enough to understand what happened and what needs follow-up. Write at an attending-physician level.
+
+Mark any section where the physician should verify or add detail with [VERIFY].
 
 Output format:
-## Hospital Course Summary — DRAFT
 
-**Admission date:**
-**Discharge date:**
-**Length of stay:** [in days; calculate from admission/discharge dates, or "Not available" if either is missing]
+## Discharge Summary — DRAFT
 
-**Admitting diagnosis:**
-**Discharge diagnosis:**
+**Patient:** [name, age, sex]
+**Admission date:** [date]
+**Discharge date:** [date]
+**Length of stay:** [N days]
+**Admitting physician:** [VERIFY]
+**Admitting diagnosis:** [diagnosis]
+**Discharge diagnosis:** [diagnosis]
+**Discharge condition:** [Stable / Improved / Unchanged / Declined]
+**Discharge disposition:** [Home / SNF / Inpatient rehab / LTACH / AMA]
 
-**Hospital Course:**
-[Chronological narrative: what was found on admission, key interventions, \
-how the patient responded, and condition at discharge. 2–3 short paragraphs.]
+---
 
-**Significant results:**
-- [Lab values, imaging, or procedures that changed management — with dates if available]
+### Reason for Admission
+[1–2 sentences: who is this patient and why did they come in]
 
-**Medication changes:**
-- Started: [drug, dose, indication]
-- Stopped: [drug, reason]
-- Changed: [drug, old → new dose, reason]
-- Held during admission, resumed at discharge: [drug, context]
+---
 
-(If no changes from home medications, write 'No changes from home medications.' and omit the subcategories above.)
+### Hospital Course
+[Narrative paragraphs, one per major problem. Chronological. Cover: what was found, what was done, how the patient responded. For each problem, end with the status at discharge.
 
-**Discharge condition:** [Stable / Improved / Guarded]
-**Discharge disposition:** [Home / SNF / Rehab / Other]
+Do NOT write one continuous block — use a paragraph break for each distinct problem.]
 
-**What the PCP must know:**
-- [1–3 bullets: unresolved issues, pending results, or decisions deferred to outpatient]
+---
 
-Rules:
-- Do not copy-paste raw lab values or vitals tables — summarize what they mean clinically
-- Do not speculate about diagnoses not supported by the available data
-- Do not invent dates, dosages, medication names, or clinical events not present in the context data
-- Write for a PCP, not a specialist — avoid unexplained jargon
-- If a single field's data is missing, mark it as '[Not available — verify in chart]'
-- If most fields are missing and the resulting document would be more '[Not available]' \
-markers than substance, state at the top: 'Insufficient data to draft a meaningful summary. \
-Available information: [brief description].' rather than filling in a hollow template"""
+### Discharge Condition and Functional Status
+[How the patient is at discharge vs. admission. Include functional status, O2 requirement, weight vs. dry weight.]
+
+---
+
+### Discharge Medications
+[Note: full reconciliation is in the medication section. Summarize changes here in 1–2 sentences: e.g., "Furosemide uptitrated from 40mg to 80mg daily. KCl 20mEq daily added."]
+
+---
+
+### Follow-Up
+[List scheduled or recommended follow-up appointments with provider and timeframe]
+
+---
+
+### Outstanding Issues for Receiving Provider
+[Brief preview of items in the transitional issues section — the 2–3 most important things the PCP must act on]"""
 
     def format_prompt(self, context: dict) -> str:
         patient = context["patient_data"]
-        return f"""Patient ID: {context["patient_id"]}
-Name: {patient.get("name", "[Not available]")} | Age: {patient.get("age", "[Not available]")} | Sex: {patient.get("sex", "[Not available]")}
-Admission date: {patient.get("admission_date", "[Not available — verify in chart]")}
-Discharge date: {patient.get("discharge_date", "[Not available — verify in chart]")}
-Admitting diagnosis: {patient.get("admitting_diagnosis", "[Not available — verify in chart]")}
+        return f"""Patient: {patient.get("name", context["patient_id"])}, {patient.get("age", "?")}y {patient.get("sex", "?")}
+Admission: {context.get("admission_date", "?")} → Discharge: {context.get("discharge_date", "?")} ({context.get("length_of_stay_days", "?")} days)
+Admitting diagnosis: {context.get("admitting_diagnosis", "?")}
+Discharge diagnosis: {context.get("discharge_diagnosis", "?")}
+Discharge disposition: {context.get("discharge_disposition", "?")}
+PMH: {", ".join(patient.get("pmh", []))}
+Allergies: {patient.get("allergies", [])}
 
-Past medical history:
-{json.dumps(patient.get("pmh", []), indent=2)}
+Functional status at discharge: {context.get("functional_status_at_discharge", "[VERIFY]")}
+PCP: {context.get("primary_care_provider", "[VERIFY]")}
+Insurance: {context.get("insurance", "[VERIFY]")}
 
-Allergies:
-{json.dumps(patient.get("allergies", []), indent=2)}
+---
 
-Home medications (prior to admission):
-{json.dumps(patient.get("current_medications", []), indent=2)}
+INPATIENT COURSE SYNTHESIS:
+{context.get("inpatient_course", "Not available — refer to raw notes.")}
 
-Vitals at admission:
-{json.dumps(patient.get("vitals_at_admission", {}), indent=2)}
+---
 
-ED physician notes:
-{context.get("ed_notes", "[Not available — verify in chart]")}
-
-Overnight handoff notes:
-{context.get("handoff_notes", "[Not available — verify in chart]")}
-
-Daily progress notes:
-{json.dumps(patient.get("daily_progress_notes", []), indent=2)}
-
-Nursing notes:
-{json.dumps(patient.get("nursing_notes", []), indent=2)}
-
-Lab results (chronological):
-{json.dumps(patient.get("lab_results", []), indent=2)}
-
-Consult notes:
-{json.dumps(patient.get("consult_notes", []), indent=2)}
-
-Medications administered:
-{json.dumps(patient.get("medications_administered", []), indent=2)}
-
-Prior hospitalizations:
-{json.dumps(context.get("prior_history", []), indent=2)}
-
-Please draft the hospital course summary."""
+Please draft the discharge summary."""

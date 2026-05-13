@@ -18,7 +18,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from context.session import PatientSession
+from context.session import PatientSession, DischargeSession
 from tools.epic import EpicClient
 from wiki.loader import load_wiki
 from llm import AnthropicBackend, GeminiBackend
@@ -36,18 +36,11 @@ WORKFLOWS = {
 }
 
 
-def build_session(patient_id: str, epic: EpicClient, workflow: str = "") -> PatientSession:
+def build_session(workflow: str, patient_id: str, epic: EpicClient):
+    """Returns the appropriate session type for the given workflow."""
     if workflow == "discharge":
-        patient_data = epic.get_discharge_patient(patient_id)
-    else:
-        patient_data = epic.get_patient(patient_id)
-    return PatientSession(
-        patient_id=patient_id,
-        patient_data=patient_data,
-        prior_history=patient_data.get("prior_hospitalizations") or epic.get_prior_hospitalizations(patient_id),
-        ed_notes=patient_data.get("ed_assessment") or epic.get_ed_notes(patient_id),
-        handoff_notes=patient_data.get("handoff_notes") or epic.get_handoff_notes(patient_id),
-    )
+        return epic.get_discharge_session(patient_id)
+    return epic.build_admission_session(patient_id)
 
 
 def print_results(workflow_name: str, state) -> None:
@@ -100,7 +93,7 @@ def main():
 
     print("Connecting to Epic (stub mode)...")
     epic = EpicClient()
-    session = build_session(args.patient, epic, workflow=args.workflow)
+    session = build_session(args.workflow, args.patient, epic)
 
     engine = WorkflowEngine(backend=backend, model=model, wiki=wiki)
 

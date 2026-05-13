@@ -1,0 +1,256 @@
+{
+  "patient_id": "TEST-001",
+  "patient_data": {
+    "patient_id": "TEST-001",
+    "name": "John Smith",
+    "age": 67,
+    "sex": "M",
+    "chief_complaint": "Shortness of breath, worsening over 3 days",
+    "vitals": {
+      "heart_rate": 98,
+      "blood_pressure": "148/92",
+      "respiratory_rate": 22,
+      "o2_saturation": 91,
+      "temperature_celsius": 37.1,
+      "weight_kg": 94
+    },
+    "labs": {
+      "sodium": 138, "potassium": 4.2, "creatinine": 1.8, "bun": 32,
+      "glucose": 112, "bnp": 1240, "troponin_i": 0.04,
+      "wbc": 8200, "hemoglobin": 11.2, "hematocrit": 33.6, "platelets": 214000, "inr": 1.1
+    },
+    "pmh": [
+      "Congestive heart failure (EF 30-35%)",
+      "Coronary artery disease",
+      "Hypertension",
+      "CKD stage 3 (baseline creatinine 1.5-1.7)",
+      "Type 2 diabetes mellitus"
+    ],
+    "current_medications": [
+      "Lisinopril 10mg daily", "Carvedilol 12.5mg twice daily",
+      "Furosemide 40mg daily", "Aspirin 81mg daily",
+      "Atorvastatin 40mg nightly", "Metformin 500mg twice daily"
+    ],
+    "allergies": [
+      {"drug": "Penicillin", "reaction": "rash"},
+      {"drug": "Sulfa", "reaction": "hives"}
+    ],
+    "baseline_functional_status": "Able to climb one flight of stairs with mild dyspnea, walks approximately one block before stopping. Sleeps with two pillows (orthopnea). Lives alone, manages all ADLs independently."
+  },
+  "prior_history": [
+    {
+      "date": "2025-11-12",
+      "reason": "CHF exacerbation",
+      "length_of_stay_days": 4,
+      "treatment": "IV diuresis. Discharged on Furosemide 40mg daily. Echo EF 30-35%.",
+      "discharge_weight_kg": 89
+    },
+    {
+      "date": "2025-05-03",
+      "reason": "CHF exacerbation",
+      "length_of_stay_days": 6,
+      "treatment": "IV diuresis. Cardiac cath: severe 3-vessel CAD, medical management. GDMT optimized.",
+      "discharge_weight_kg": 87
+    }
+  ],
+  "ed_notes": "67M with HFrEF presenting with 3 days of worsening SOB. Exam: elevated JVP, bilateral crackles, 2+ bilateral LE edema. CXR: pulmonary vascular congestion, bilateral pleural effusions. ECG: LBBB (known). Starting IV Lasix 80mg. Admit medicine for diuresis.",
+  "handoff_notes": "67M CHF exac, hemodynamically stable. Getting IV diuresis — check UOP q4h. BMP in AM. Echo ordered. Cardiology aware. Watch creatinine — baseline 1.5-1.7, currently 1.8. Full code.",
+
+  "admission_date": "2026-05-07",
+  "discharge_date": "2026-05-12",
+  "length_of_stay_days": 5,
+  "admitting_diagnosis": "Acute decompensated heart failure (HFrEF, EF 30%)",
+  "discharge_diagnosis": "Acute decompensated heart failure, resolved; newly identified moderate mitral regurgitation; AKI stage 1 on CKD stage 3 (resolved)",
+  "discharge_disposition": "home",
+
+  "progress_notes": [
+    {
+      "note_type": "progress_note",
+      "author": "Dr. J. Park",
+      "author_role": "resident",
+      "specialty": "internal_medicine",
+      "timestamp": "2026-05-08T09:00:00",
+      "content": "Hospital Day 1\nS: Patient reports mild improvement in dyspnea overnight. Sleeping with 2 pillows. No chest pain.\nO: VS: HR 94, BP 142/88, RR 20, O2 96% on 2L NC, Wt 93.1 kg (-0.9 kg from admit). UOP: 2.1L since admission.\nLabs: Na 137, K 3.8, Cr 1.9 (up from 1.8 — monitoring), BNP pending.\nExam: JVP ~10cm, bibasilar crackles (mild improvement from admission), 2+ pitting edema bilateral LE to knees.\nA/P:\n1. Acute decompensated HFrEF: Responding to IV diuresis. UOP adequate. Continue IV Furosemide 80mg daily. Echo ordered for today/tomorrow. Target -1 to -2L/day fluid balance.\n2. AKI on CKD: Creatinine 1.9 (baseline 1.5-1.7). Likely pre-renal from aggressive diuresis. Continue monitoring BMP q12h. Hold diuresis if Cr rises above 2.2 or if patient becomes hemodynamically unstable.\n3. Hypertension: BP 142/88. Continue home antihypertensives. Do not add agents during acute illness.\n4. CAD: Continue aspirin 81mg, atorvastatin. No active ischemia.\n5. DM2: Hold metformin while Cr elevated. Glucose checks TID — mild hyperglycemia, no insulin needed yet."
+    },
+    {
+      "note_type": "progress_note",
+      "author": "Dr. J. Park",
+      "author_role": "resident",
+      "specialty": "internal_medicine",
+      "timestamp": "2026-05-09T09:00:00",
+      "content": "Hospital Day 2\nS: Patient notes continued improvement. Dyspnea at rest resolved. Sleeping with 1 pillow now (was 2). Tolerating PO well.\nO: VS: HR 88, BP 138/84, RR 18, O2 97% on 2L NC, Wt 91.2 kg (-2.8 kg cumulative, -1.9 kg from yesterday). UOP: 2.4L overnight.\nLabs: Na 138, K 3.5 (low-normal — adding supplement), Cr 2.0 (peak, up from 1.9 — monitoring closely), BNP 880 (down from 1240).\nEcho resulted: EF 30-35% (unchanged from prior Nov 2025), new finding of moderate mitral regurgitation with P2 scallop prolapse — not present on prior echo.\nA/P:\n1. Acute decompensated HFrEF: Continued improvement. Transitioning to PO Furosemide 80mg BID today. Echo shows new moderate MR — placing cardiology consult.\n2. AKI on CKD: Cr 2.0 (peak). Slowing net fluid removal slightly by transitioning to PO diuretic. Check Cr again in AM.\n3. Hypokalemia: K 3.5, adding KCl 20mEq PO daily. Recheck K in AM.\n4. New finding — moderate MR: Cardiology consult placed. Await recommendations.\n5. DM2: Continue to hold metformin. Glucose stable."
+    },
+    {
+      "note_type": "progress_note",
+      "author": "Dr. J. Park",
+      "author_role": "resident",
+      "specialty": "internal_medicine",
+      "timestamp": "2026-05-10T09:00:00",
+      "content": "Hospital Day 3\nS: Significant clinical improvement. Patient ambulating in hallway without dyspnea at rest or significant exertion dyspnea. No orthopnea. Sleeping flat.\nO: VS: HR 82, BP 134/82, RR 16, O2 97% on RA (weaned off supplemental O2 this morning), Wt 89.8 kg (-4.2 kg cumulative).\nLabs: Na 139, K 3.8 (improved on KCl), Cr 1.9 (improving from peak 2.0), BNP 620 (trending down).\nExam: JVP ~7cm (improved), mild bibasilar crackles at bases only, 1+ bilateral LE edema (significantly improved).\nCardiology seen — see consult note from 5/9.\nA/P:\n1. Acute decompensated HFrEF: Excellent response to diuresis. Off supplemental O2. Approaching dry weight (estimated dry weight 88-89 kg). Continue PO Furosemide 80mg BID.\n2. AKI resolving: Cr 1.9, trending toward baseline. Reassuring. Continue daily BMP.\n3. Moderate MR: Per cardiology, continue GDMT. Outpatient cardiology follow-up in 2 weeks. Repeat echo in 3 months.\n4. PT consulted: patient ambulating independently and safely. No inpatient or home PT needed.\n5. Discharge planning: Targeting discharge HD4-5 if continues to improve. Counseling patient on discharge meds and follow-up plan."
+    },
+    {
+      "note_type": "progress_note",
+      "author": "Dr. J. Park",
+      "author_role": "resident",
+      "specialty": "internal_medicine",
+      "timestamp": "2026-05-11T09:00:00",
+      "content": "Hospital Day 4\nS: Patient feeling well. No dyspnea at rest or with ambulation on floor. Eager to go home. Daughter visited and aware of discharge plan.\nO: VS: HR 78, BP 132/80, RR 16, O2 98% on RA, Wt 89.0 kg (-5.0 kg cumulative).\nLabs: Na 138, K 4.0, Cr 1.8 (back to patient's baseline), BNP 420 (significantly improved from 1240 on admission).\nExam: JVP 6cm, lungs clear, trace bilateral ankle edema. Well-appearing.\nA/P:\n1. Acute decompensated HFrEF: Near-complete resolution. At dry weight. Discharge tomorrow.\n   Discharge diuretic: Furosemide 80mg daily (uptitrated from admission dose of 40mg daily — per cardiology recommendation).\n   Patient and daughter counseled: daily morning weights, low-sodium diet (<2g/day), fluid restriction 1.5L/day, return to ED if weight gain >3 lbs in 2 days or return of dyspnea.\n2. AKI resolved: Cr 1.8 (at pre-admission baseline). Safe to restart metformin at discharge.\n3. Hypokalemia: K 4.0 on KCl supplementation. Continue KCl 20mEq daily at discharge. Recheck BMP in 1 week.\n4. Discharge medications: reconciled — see medication list.\n5. Follow-up: Cardiology in 2 weeks. PCP within 1 week for BMP recheck."
+    }
+  ],
+
+  "consult_notes": [
+    {
+      "note_type": "consult",
+      "author": "Dr. M. Chen",
+      "author_role": "attending",
+      "specialty": "cardiology",
+      "timestamp": "2026-05-09T15:30:00",
+      "content": "CARDIOLOGY CONSULTATION — Heart Failure and Valvular Disease\n\nReason for consult: Acute decompensated HFrEF with newly identified moderate mitral regurgitation on echocardiogram.\n\nEchocardiographic findings reviewed:\n- LV systolic function: severely reduced, EF 30-35% — consistent with prior study (2025-11-12, EF 30-35%)\n- Mitral valve: moderate mitral regurgitation with prolapse of the P2 scallop — NEW finding, not present on 2025-11-12 echo\n- RVSP estimated 42 mmHg — mild pulmonary hypertension, new from prior\n- No significant pericardial effusion\n\nImpression:\nThis gentleman's decompensation is likely driven primarily by dietary sodium non-compliance (per patient history) on a background of HFrEF and CAD. The newly identified moderate MR with P2 prolapse is an important new finding. While not the primary driver of this decompensation, progressive MR in the setting of pre-existing HFrEF and CAD increases afterload burden and may accelerate clinical decline if not monitored.\n\nThe combination of HFrEF + moderate MR + mild pulmonary hypertension warrants close outpatient follow-up and reassessment of whether surgical/interventional mitral valve repair should be discussed.\n\nRecommendations:\n1. Continue aggressive diuresis to euvolemia — target dry weight 88-89 kg\n2. Continue GDMT: lisinopril 10mg daily, carvedilol 12.5mg BID — do not uptitrate during this acute illness\n3. Discharge diuretic: Furosemide 80mg daily (uptitrated from 40mg)\n4. Outpatient cardiology follow-up in 2 weeks for:\n   - Clinical reassessment of volume status\n   - Discussion of ICD/CRT-D candidacy (EF 30-35%, LBBB on ECG)\n   - MR management strategy\n5. Repeat transthoracic echocardiogram in 3 months to reassess MR severity and EF\n6. If MR progresses to severe or symptoms worsen despite GDMT, refer for cardiac surgery/interventional MV evaluation\n7. BMP within 1 week of discharge: monitor creatinine on new diuretic dose and potassium on KCl supplementation\n\nWill continue to follow. Thank you for the consult."
+    }
+  ],
+
+  "procedure_notes": [],
+
+  "imaging_reports": [
+    {
+      "modality": "XR",
+      "body_region": "chest",
+      "timestamp": "2026-05-07T22:30:00",
+      "ordering_indication": "Shortness of breath — evaluate for pulmonary edema",
+      "findings": "Cardiomegaly, cardiothoracic ratio 0.58. Pulmonary vascular congestion with bilateral interstitial opacities consistent with pulmonary edema. Small bilateral pleural effusions. No focal consolidation to suggest pneumonia. No pneumothorax. Bony structures intact. INCIDENTAL: 4mm nodule in the right lower lobe periphery. Prior CXR from September 2024 does not demonstrate this nodule.",
+      "impression": "1. Acute pulmonary edema superimposed on cardiomegaly. Small bilateral pleural effusions. Consistent with decompensated heart failure. 2. INCIDENTAL FINDING: 4mm right lower lobe pulmonary nodule, new compared to September 2024 CXR. Per Fleischner Society guidelines, CT chest without contrast surveillance recommended in 3 months given patient age >35 and nodule size 4-6mm.",
+      "incidental_findings": [
+        "4mm right lower lobe pulmonary nodule, new from September 2024 CXR — requires CT surveillance"
+      ],
+      "requires_follow_up": true,
+      "follow_up_recommendation": "CT chest without contrast in 3 months (Fleischner Society guideline: 4-6mm nodule, patient >35 years, no high-risk features)"
+    },
+    {
+      "modality": "XR",
+      "body_region": "chest",
+      "timestamp": "2026-05-11T08:00:00",
+      "ordering_indication": "Reassess pulmonary edema, pre-discharge CXR",
+      "findings": "Cardiomegaly, stable. Interval significant improvement in pulmonary edema. Minimal residual bilateral pleural effusions, markedly improved from admission. Pulmonary vasculature normalizing. No new consolidation or pneumothorax.",
+      "impression": "Marked improvement in pulmonary edema compared to 2026-05-07 admission film. Appropriate response to diuretic therapy. Residual small pleural effusions expected at this stage.",
+      "incidental_findings": [],
+      "requires_follow_up": false,
+      "follow_up_recommendation": ""
+    },
+    {
+      "modality": "Echo",
+      "body_region": "cardiac",
+      "timestamp": "2026-05-09T10:00:00",
+      "ordering_indication": "Assessment of LV function and valvular disease in decompensated HF",
+      "findings": "Left ventricle: Severely reduced systolic function. EF estimated 30-35%. Global hypokinesis. LV mildly dilated (LVIDD 6.1cm). Interventricular septum 1.0cm. Posterior wall 0.9cm. Left atrium: mildly enlarged (LA volume index 36 mL/m2). Mitral valve: Moderate mitral regurgitation. Posterior leaflet prolapse of P2 scallop with chordal elongation. Regurgitant jet eccentric, directed anteriorly. Vena contracta 0.45cm. No mitral stenosis. Right ventricle: Normal size and systolic function. Estimated RVSP 42 mmHg (mild pulmonary hypertension) assuming RAP 10 mmHg. Aortic valve: Sclerotic leaflets. No significant aortic stenosis or regurgitation. Pericardium: No pericardial effusion. IVC: Dilated at 2.3cm with <50% inspiratory collapse, consistent with elevated RAP.",
+      "impression": "1. Severely reduced LV systolic function, EF 30-35% — unchanged from prior study (November 2025, EF 30-35%). 2. Moderate mitral regurgitation with P2 posterior leaflet prolapse — NEW compared to prior study which demonstrated only mild MR. 3. Mild pulmonary hypertension (RVSP 42 mmHg) — new from prior. 4. Elevated filling pressures. Cardiology consultation recommended for MR management.",
+      "incidental_findings": [
+        "Moderate mitral regurgitation with P2 prolapse — NEW finding (prior study: mild MR only)",
+        "Mild pulmonary hypertension (RVSP 42 mmHg) — new finding"
+      ],
+      "requires_follow_up": true,
+      "follow_up_recommendation": "Repeat TTE in 3 months to reassess MR severity. Cardiology follow-up in 2 weeks for ICD/CRT-D candidacy and MR management discussion."
+    }
+  ],
+
+  "lab_trends": [
+    {
+      "name": "Creatinine",
+      "unit": "mg/dL",
+      "results": [
+        {"name": "Creatinine", "value": "1.8", "unit": "mg/dL", "reference_range": "0.7-1.3", "timestamp": "2026-05-07T22:00:00", "is_abnormal": true, "is_critical": false},
+        {"name": "Creatinine", "value": "1.9", "unit": "mg/dL", "reference_range": "0.7-1.3", "timestamp": "2026-05-08T06:00:00", "is_abnormal": true, "is_critical": false},
+        {"name": "Creatinine", "value": "2.0", "unit": "mg/dL", "reference_range": "0.7-1.3", "timestamp": "2026-05-09T06:00:00", "is_abnormal": true, "is_critical": false},
+        {"name": "Creatinine", "value": "1.9", "unit": "mg/dL", "reference_range": "0.7-1.3", "timestamp": "2026-05-10T06:00:00", "is_abnormal": true, "is_critical": false},
+        {"name": "Creatinine", "value": "1.8", "unit": "mg/dL", "reference_range": "0.7-1.3", "timestamp": "2026-05-11T06:00:00", "is_abnormal": true, "is_critical": false}
+      ]
+    },
+    {
+      "name": "Potassium",
+      "unit": "mEq/L",
+      "results": [
+        {"name": "Potassium", "value": "4.2", "unit": "mEq/L", "reference_range": "3.5-5.0", "timestamp": "2026-05-07T22:00:00", "is_abnormal": false, "is_critical": false},
+        {"name": "Potassium", "value": "3.8", "unit": "mEq/L", "reference_range": "3.5-5.0", "timestamp": "2026-05-08T06:00:00", "is_abnormal": false, "is_critical": false},
+        {"name": "Potassium", "value": "3.5", "unit": "mEq/L", "reference_range": "3.5-5.0", "timestamp": "2026-05-09T06:00:00", "is_abnormal": false, "is_critical": false},
+        {"name": "Potassium", "value": "3.8", "unit": "mEq/L", "reference_range": "3.5-5.0", "timestamp": "2026-05-10T06:00:00", "is_abnormal": false, "is_critical": false},
+        {"name": "Potassium", "value": "4.0", "unit": "mEq/L", "reference_range": "3.5-5.0", "timestamp": "2026-05-11T06:00:00", "is_abnormal": false, "is_critical": false}
+      ]
+    },
+    {
+      "name": "Sodium",
+      "unit": "mEq/L",
+      "results": [
+        {"name": "Sodium", "value": "138", "unit": "mEq/L", "reference_range": "136-145", "timestamp": "2026-05-07T22:00:00", "is_abnormal": false, "is_critical": false},
+        {"name": "Sodium", "value": "137", "unit": "mEq/L", "reference_range": "136-145", "timestamp": "2026-05-08T06:00:00", "is_abnormal": false, "is_critical": false},
+        {"name": "Sodium", "value": "138", "unit": "mEq/L", "reference_range": "136-145", "timestamp": "2026-05-09T06:00:00", "is_abnormal": false, "is_critical": false},
+        {"name": "Sodium", "value": "139", "unit": "mEq/L", "reference_range": "136-145", "timestamp": "2026-05-10T06:00:00", "is_abnormal": false, "is_critical": false},
+        {"name": "Sodium", "value": "138", "unit": "mEq/L", "reference_range": "136-145", "timestamp": "2026-05-11T06:00:00", "is_abnormal": false, "is_critical": false}
+      ]
+    },
+    {
+      "name": "BNP",
+      "unit": "pg/mL",
+      "results": [
+        {"name": "BNP", "value": "1240", "unit": "pg/mL", "reference_range": "<100", "timestamp": "2026-05-07T22:00:00", "is_abnormal": true, "is_critical": false},
+        {"name": "BNP", "value": "880",  "unit": "pg/mL", "reference_range": "<100", "timestamp": "2026-05-09T06:00:00", "is_abnormal": true, "is_critical": false},
+        {"name": "BNP", "value": "620",  "unit": "pg/mL", "reference_range": "<100", "timestamp": "2026-05-10T06:00:00", "is_abnormal": true, "is_critical": false},
+        {"name": "BNP", "value": "420",  "unit": "pg/mL", "reference_range": "<100", "timestamp": "2026-05-11T06:00:00", "is_abnormal": true, "is_critical": false}
+      ]
+    },
+    {
+      "name": "Hemoglobin",
+      "unit": "g/dL",
+      "results": [
+        {"name": "Hemoglobin", "value": "11.2", "unit": "g/dL", "reference_range": "13.5-17.5", "timestamp": "2026-05-07T22:00:00", "is_abnormal": true, "is_critical": false},
+        {"name": "Hemoglobin", "value": "10.8", "unit": "g/dL", "reference_range": "13.5-17.5", "timestamp": "2026-05-09T06:00:00", "is_abnormal": true, "is_critical": false},
+        {"name": "Hemoglobin", "value": "11.0", "unit": "g/dL", "reference_range": "13.5-17.5", "timestamp": "2026-05-11T06:00:00", "is_abnormal": true, "is_critical": false}
+      ]
+    },
+    {
+      "name": "BUN",
+      "unit": "mg/dL",
+      "results": [
+        {"name": "BUN", "value": "32", "unit": "mg/dL", "reference_range": "7-20", "timestamp": "2026-05-07T22:00:00", "is_abnormal": true, "is_critical": false},
+        {"name": "BUN", "value": "38", "unit": "mg/dL", "reference_range": "7-20", "timestamp": "2026-05-09T06:00:00", "is_abnormal": true, "is_critical": false},
+        {"name": "BUN", "value": "34", "unit": "mg/dL", "reference_range": "7-20", "timestamp": "2026-05-11T06:00:00", "is_abnormal": true, "is_critical": false}
+      ]
+    }
+  ],
+
+  "admission_medications": [
+    {"name": "Furosemide",    "dose": "40mg",   "route": "PO", "frequency": "daily",     "status": "dose_increased", "indication": "Heart failure",          "change_reason": "Decompensation requiring higher maintenance dose",       "monitoring_needed": "BMP in 1 week — check creatinine and potassium on new dose"},
+    {"name": "Lisinopril",    "dose": "10mg",   "route": "PO", "frequency": "daily",     "status": "continued",      "indication": "Heart failure / HTN",     "change_reason": "",                                                      "monitoring_needed": ""},
+    {"name": "Carvedilol",    "dose": "12.5mg", "route": "PO", "frequency": "twice daily","status": "continued",     "indication": "Heart failure / HTN",     "change_reason": "",                                                      "monitoring_needed": ""},
+    {"name": "Aspirin",       "dose": "81mg",   "route": "PO", "frequency": "daily",     "status": "continued",      "indication": "CAD secondary prevention","change_reason": "",                                                      "monitoring_needed": ""},
+    {"name": "Atorvastatin",  "dose": "40mg",   "route": "PO", "frequency": "nightly",   "status": "continued",      "indication": "CAD / hyperlipidemia",    "change_reason": "",                                                      "monitoring_needed": ""},
+    {"name": "Metformin",     "dose": "500mg",  "route": "PO", "frequency": "twice daily","status": "held",          "indication": "Type 2 diabetes",         "change_reason": "Held during admission for AKI (Cr elevated above baseline)","monitoring_needed": "Safe to restart at discharge once Cr at baseline"}
+  ],
+
+  "discharge_medications": [
+    {"name": "Furosemide",           "dose": "80mg",   "route": "PO", "frequency": "daily",     "status": "dose_increased", "indication": "Heart failure",          "change_reason": "Uptitrated from 40mg daily — patient required 80mg BID inpatient; consolidating to once daily for outpatient simplicity per cardiology",      "monitoring_needed": "BMP within 1 week — check creatinine and potassium"},
+    {"name": "Potassium Chloride",   "dose": "20mEq",  "route": "PO", "frequency": "daily",     "status": "new",            "indication": "Hypokalemia prevention on loop diuretic", "change_reason": "Started after K dropped to 3.5 on increased Lasix dose", "monitoring_needed": "Potassium level within 1 week — adjust dose as needed"},
+    {"name": "Lisinopril",           "dose": "10mg",   "route": "PO", "frequency": "daily",     "status": "continued",      "indication": "Heart failure / HTN",     "change_reason": "",                                                      "monitoring_needed": ""},
+    {"name": "Carvedilol",           "dose": "12.5mg", "route": "PO", "frequency": "twice daily","status": "continued",     "indication": "Heart failure / HTN",     "change_reason": "",                                                      "monitoring_needed": ""},
+    {"name": "Aspirin",              "dose": "81mg",   "route": "PO", "frequency": "daily",     "status": "continued",      "indication": "CAD secondary prevention","change_reason": "",                                                      "monitoring_needed": ""},
+    {"name": "Atorvastatin",         "dose": "40mg",   "route": "PO", "frequency": "nightly",   "status": "continued",      "indication": "CAD / hyperlipidemia",    "change_reason": "",                                                      "monitoring_needed": ""},
+    {"name": "Metformin",            "dose": "500mg",  "route": "PO", "frequency": "twice daily","status": "continued",     "indication": "Type 2 diabetes",         "change_reason": "Restarting — held during admission for AKI; creatinine back to baseline 1.8 at discharge", "monitoring_needed": "Confirm creatinine stable at 1-week BMP"}
+  ],
+
+  "vitals_trend": [
+    {"timestamp": "2026-05-07T22:00:00", "heart_rate": 98,  "blood_pressure": "148/92", "respiratory_rate": 22, "o2_saturation": 91.0, "temperature_celsius": 37.1, "weight_kg": 94.0, "o2_delivery": "4L NC",   "fluid_balance_ml": null},
+    {"timestamp": "2026-05-08T08:00:00", "heart_rate": 94,  "blood_pressure": "142/88", "respiratory_rate": 20, "o2_saturation": 96.0, "temperature_celsius": 37.0, "weight_kg": 93.1, "o2_delivery": "2L NC",   "fluid_balance_ml": -2100},
+    {"timestamp": "2026-05-09T08:00:00", "heart_rate": 88,  "blood_pressure": "138/84", "respiratory_rate": 18, "o2_saturation": 97.0, "temperature_celsius": 37.0, "weight_kg": 91.2, "o2_delivery": "2L NC",   "fluid_balance_ml": -2400},
+    {"timestamp": "2026-05-10T08:00:00", "heart_rate": 82,  "blood_pressure": "134/82", "respiratory_rate": 16, "o2_saturation": 97.0, "temperature_celsius": 36.9, "weight_kg": 89.8, "o2_delivery": "RA",      "fluid_balance_ml": -1400},
+    {"timestamp": "2026-05-11T08:00:00", "heart_rate": 78,  "blood_pressure": "132/80", "respiratory_rate": 16, "o2_saturation": 98.0, "temperature_celsius": 36.8, "weight_kg": 89.0, "o2_delivery": "RA",      "fluid_balance_ml": -900},
+    {"timestamp": "2026-05-12T07:00:00", "heart_rate": 76,  "blood_pressure": "130/78", "respiratory_rate": 15, "o2_saturation": 98.0, "temperature_celsius": 36.8, "weight_kg": 88.8, "o2_delivery": "RA",      "fluid_balance_ml": -400}
+  ],
+
+  "pending_follow_ups": [
+    {"provider": "Cardiology (Dr. M. Chen)", "timeframe": "2 weeks", "reason": "MR management, ICD/CRT-D candidacy discussion"},
+    {"provider": "Primary Care (Dr. Rachel Kim)", "timeframe": "1 week", "reason": "BMP recheck — creatinine and potassium on new diuretic dose"}
+  ],
+
+  "insurance": "Medicare Part A and Part B; supplemental Medigap Plan G",
+  "primary_care_provider": "Dr. Rachel Kim, Cambridge Health Alliance, (617) 555-0142",
+  "social_support": "Lives alone in first-floor apartment. Daughter Sarah (primary contact) visits weekly and is engaged in discharge planning. No visiting nurse currently.",
+  "functional_status_at_discharge": "Ambulating independently on ward without supplemental oxygen. Able to climb one flight of stairs with mild dyspnea — at pre-admission baseline. All ADLs independent. No home PT or OT needed."
+}

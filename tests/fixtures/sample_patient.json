@@ -3,6 +3,7 @@
   "name": "John Smith",
   "age": 67,
   "sex": "M",
+  "insurance": "Medicare Part A and Part B; supplemental Medigap Plan G",
   "chief_complaint": "Shortness of breath, worsening over 3 days",
   "vitals": {
     "heart_rate": 98,

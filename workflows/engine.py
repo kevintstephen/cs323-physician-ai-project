@@ -38,6 +38,75 @@ class WorkflowEngine:
         self.model = model
         self.wiki = wiki
 
+    def run_steps(
+        self,
+        steps: list[WorkflowStep],
+        session: PatientSession,
+        patient_context=None,
+        workflow_name: str = "",
+    ):
+        """
+        Generator that yields (step_name, output, state) after each step completes.
+        Use for streaming UIs — the caller can update progress after every step.
+        run() remains for CLI/batch use and is unchanged.
+
+        patient_context: optional PatientContext. When provided:
+          - Prior context is injected into every agent's system prompt so
+            agents know what previous workflows found and flagged.
+          - After all steps complete, ContextSynthesisAgent distills the
+            outputs into a WorkflowRecord and saves it to the context.
+        workflow_name: used to label the WorkflowRecord (e.g. "admission").
+        """
+        from datetime import datetime, timezone
+        from context.patient_context import WorkflowRecord
+        from agents.context_synthesis import ContextSynthesisAgent
+
+        # Build effective wiki: patient context first (most recent history),
+        # then the stable doctor wiki. Patient context changes per run so it
+        # sits outside the doctor-wiki cache block.
+        effective_wiki = self.wiki
+        if patient_context:
+            context_str = patient_context.to_prompt_str()
+            if context_str:
+                effective_wiki = (
+                    context_str + ("\n\n---\n\n" + self.wiki if self.wiki else "")
+                )
+
+        state = WorkflowState(session=session)
+
+        for step in steps:
+            agent = step.agent_class(self.backend, self.model)
+            context = self._build_context(step, session, state)
+            output = agent.run(context, effective_wiki)
+            state.outputs[step.name] = output.content
+            yield step.name, output, state
+
+        # After all workflow steps complete, synthesize and persist context.
+        if patient_context is not None:
+            synthesizer = ContextSynthesisAgent(self.backend, self.model)
+            synth_output, parsed = synthesizer.synthesize(
+                patient_id=session.patient_id,
+                workflow_name=workflow_name or "workflow",
+                outputs=state.outputs,
+            )
+
+            record = WorkflowRecord(
+                workflow=workflow_name or "workflow",
+                timestamp=datetime.now(timezone.utc).isoformat(),
+                summary=parsed.get("summary", ""),
+                key_findings=parsed.get("key_findings", []),
+                open_issues=parsed.get("open_issues", []),
+                resolved_issues=parsed.get("resolved_issues", []),
+            )
+            patient_context.add_record(record)
+            patient_context.save()
+
+            # Yield synthesis as a named step so the UI can show it
+            state.outputs["context_synthesis"] = synth_output.content
+            yield "context_synthesis", synth_output, state
+
+        state.status = "complete"
+
     def run(self, steps: list[WorkflowStep], session: PatientSession) -> WorkflowState:
         state = WorkflowState(session=session)
 
@@ -58,7 +127,8 @@ class WorkflowEngine:
     ) -> dict:
         """
         Builds the context dict passed to agent.format_prompt().
-        Always includes the raw patient data; optionally includes prior step outputs.
+        Always includes the base patient fields; adds discharge-specific fields
+        when a DischargeSession is passed (checked via getattr — no hard import).
         """
         context: dict = {
             "patient_id": session.patient_id,
@@ -67,7 +137,27 @@ class WorkflowEngine:
             "ed_notes": session.ed_notes,
             "handoff_notes": session.handoff_notes,
         }
+
+        # Discharge-specific fields — present only on DischargeSession.
+        # Using getattr keeps the engine decoupled from the session subclass.
+        _discharge_fields = [
+            "admission_date", "discharge_date", "length_of_stay_days",
+            "admitting_diagnosis", "discharge_diagnosis", "discharge_disposition",
+            "progress_notes", "consult_notes", "procedure_notes",
+            "lab_trends", "imaging_reports",
+            "admission_medications", "discharge_medications",
+            "vitals_trend", "pending_follow_ups",
+            "insurance", "primary_care_provider",
+            "social_support", "functional_status_at_discharge",
+        ]
+        for field in _discharge_fields:
+            value = getattr(session, field, None)
+            if value is not None:
+                context[field] = value
+
+        # Prior step outputs
         for key in step.context_keys:
             if key in state.outputs:
                 context[key] = state.outputs[key]
+
         return context

@@ -13,3 +13,4 @@ build/
 .coverage
 htmlcov/
 GEMINI.md
+context/records/
