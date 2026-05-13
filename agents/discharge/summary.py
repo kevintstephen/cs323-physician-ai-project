@@ -64,7 +64,15 @@ Do NOT write one continuous block — use a paragraph break for each distinct pr
 ---
 
 ### Outstanding Issues for Receiving Provider
-[Brief preview of items in the transitional issues section — the 2–3 most important things the PCP must act on]"""
+[Brief preview of items in the transitional issues section — the 2–3 most important things the PCP must act on]
+
+Rules:
+- Do not invent dates, dosages, medication names, or clinical events not present in the context data
+- Do not copy-paste raw lab values or vitals tables — summarize what they mean clinically
+- Write for a PCP, not a specialist — avoid unexplained jargon
+- If most sections lack data and the resulting document would be more [VERIFY] markers \
+than substance, state at the top: 'Insufficient data to draft a meaningful summary. \
+Available information: [brief description].' rather than filling in a hollow template"""
 
     def format_prompt(self, context: dict) -> str:
         patient = context["patient_data"]

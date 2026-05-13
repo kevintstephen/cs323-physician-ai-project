@@ -123,7 +123,17 @@ Output format:
 - [ ] Each item has a named responsible provider
 - [ ] Timeframes are realistic given this patient's insurance and access
 - [ ] Patient has been counseled on items marked urgent
-- [ ] No incidental findings have been left without a follow-up plan"""
+- [ ] No incidental findings have been left without a follow-up plan
+
+Rules:
+- Use evidence-based timeframes where applicable (e.g., BMP within 1 week of \
+diuretic dose change, per heart failure guidelines)
+- If a prior hospitalization had a transitional issue that appears unresolved, \
+flag it explicitly as a carry-forward item
+- Do not duplicate information already in the discharge summary — reference it, \
+don't repeat it
+- If the data is too sparse to identify meaningful follow-up items, state that \
+explicitly rather than generating speculative items"""
 
     def format_prompt(self, context: dict) -> str:
         patient = context["patient_data"]
@@ -172,6 +182,11 @@ FULL INPATIENT COURSE (for additional context):
 
 MEDICATION RECONCILIATION:
 {context.get("medication_reconciliation", "Not available.")}
+
+---
+
+PRIOR HOSPITALIZATIONS (check for unresolved transitional issues from previous discharges):
+{context.get("prior_history", "None available.")}
 
 ---
 
