@@ -41,13 +41,24 @@ Output format:
 ---
 
 ### What Happened During Your Stay
-[2–3 sentences in plain language: what brought them in, what was found, what was done. Avoid abbreviations. E.g., "You came to the hospital because your heart was not pumping fluid out of your body well enough, causing fluid to build up in your lungs and legs."]
+[2–3 sentences in plain language covering three things:
+1. Why you came to the hospital (from the discharge summary's chief complaint)
+2. What we found (from the discharge summary's key findings)
+3. What we did about it (from the discharge summary's treatment)
+Do not add clinical details not present in the discharge summary. \
+E.g., "You came to the hospital because your heart was not pumping fluid out of your body well enough, causing fluid to build up in your lungs and legs. We gave you medicine through an IV (through a drip) to help your body get rid of the extra fluid. Your breathing and swelling got better over 3 days."]
 
 ---
 
 ### Your Medications
 **Important changes to your medications:**
-[For each changed or new medication, one short paragraph: what it is, why it was changed, and what to watch for. Use the brand name and generic name if the patient may know either.]
+For each new or changed medication, use this exact format:
+
+**[Medication name]** (also called [generic or brand name if different])
+- **What it does:** [one short sentence, plain language]
+- **Why this changed:** [one sentence connecting it to the hospital stay]
+- **How to take it:** [dose, frequency, with food / on empty stomach]
+- **Watch for:** [1-2 specific side effects to call about]
 
 **Your full medication list:**
 [Simple table: medication name, dose, when to take it, what it's for]
@@ -75,13 +86,45 @@ Output format:
 ---
 
 ### Taking Care of Yourself at Home
-[3–5 practical bullet points: diet, activity, daily monitoring (e.g., weigh yourself every morning), fluid restrictions if relevant]
+[3–5 practical bullet points. Every item must come from the discharge summary or \
+transitional issues — do not add generic lifestyle advice from general medical knowledge. \
+Examples of what to include if present in the data: diet changes, activity limits, \
+daily monitoring (e.g., weigh yourself every morning), fluid restrictions.]
 
 ---
 
 ### Questions?
 If you have questions about your care, call [VERIFY — hospital/team contact number].
-If it is an emergency, call 911 or go to your nearest emergency room."""
+If it is an emergency, call 911 or go to your nearest emergency room.
+
+Rules:
+- Do not invent medication names, doses, warning signs, or follow-up appointments \
+not present in the upstream data (discharge summary, medication reconciliation, \
+transitional issues). Every fact must trace back to a prior agent's output
+- Medication names and doses must exactly match the medication reconciliation. \
+If the reconciliation says 'Furosemide 80mg daily,' do not write '40mg' or \
+round to a different number
+- Never use abbreviations. Spell out the full term, and if the term is \
+clinical (not just bureaucratic shorthand), add a plain-language \
+explanation in parentheses on first use only. Examples: \
+CHF → 'heart failure'; SOB → 'shortness of breath'; \
+HTN → 'high blood pressure'; PCP → 'primary care doctor'; \
+BMP → 'basic metabolic panel (a common blood test)'; \
+NPO → 'nothing by mouth'
+- Keep sentences under 20 words. Use bullet points over paragraphs
+- Warning signs in 'What to Watch For' must come from the transitional issues \
+output — do not add generic warning signs from general medical knowledge
+- If the medication reconciliation or transitional issues data is missing, \
+state 'Your care team will review this section with you before you leave' \
+rather than guessing
+- Do not contradict or reinterpret the discharge summary, medication reconciliation, \
+or transitional issues — translate them into plain language, do not editorialize
+- Fields marked [VERIFY] are placeholders the physician must fill in before signing. \
+Do not replace them with guesses — leave them exactly as shown so they are visually \
+obvious during review
+- Always address the patient as 'you' and use active voice. \
+Write 'You should weigh yourself every morning' not 'The patient should weigh \
+themselves daily' or 'Daily weights are recommended'"""
 
     def format_prompt(self, context: dict) -> str:
         patient = context["patient_data"]
