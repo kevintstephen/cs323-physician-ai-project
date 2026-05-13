@@ -119,15 +119,19 @@ Extract every action the admitting physician must take. Output the JSON array.""
     @staticmethod
     def parse_actions(content: str) -> list[dict]:
         """
-        Extracts a JSON action list from agent output using four fallback strategies,
+        Extracts a JSON action list from agent output using five fallback strategies,
         because models often add preamble text despite instructions not to.
 
         Strategy 1 — direct parse (model obeyed instructions)
         Strategy 2 — extract from ```json ... ``` code fence
         Strategy 3 — find first '[' to last ']' in the full text (most common failure mode)
         Strategy 4 — find first '{' to last '}' (model wrapped array in an object)
+        Strategy 5 — walk char-by-char extracting all complete JSON objects
         """
+        import sys
         text = content.strip()
+        print(f"[action_extraction] parse_actions called, len={len(text)}, "
+              f"first_100={repr(text[:100])}", file=sys.stderr)
 
         def _unwrap(result):
             """Return the list from result, whether it's already a list or wrapped in a dict."""
@@ -177,6 +181,38 @@ Extract every action the admitting physician must take. Output the JSON array.""
                     return found
             except (json.JSONDecodeError, ValueError):
                 pass
+
+        # Strategy 5: find all complete JSON objects in the text and assemble a list.
+        # Handles cases where the model emits objects without an outer array wrapper,
+        # or where the outer array is truncated/malformed.
+        import re as _re
+        objects = []
+        depth = 0
+        start_idx = None
+        for i, ch in enumerate(text):
+            if ch == "{":
+                if depth == 0:
+                    start_idx = i
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0 and start_idx is not None:
+                    fragment = text[start_idx:i + 1]
+                    try:
+                        obj = json.loads(fragment)
+                        if isinstance(obj, dict):
+                            objects.append(obj)
+                    except (json.JSONDecodeError, ValueError):
+                        pass
+                    start_idx = None
+        if objects:
+            # If we got exactly one dict that wraps a list, unwrap it
+            if len(objects) == 1:
+                found = _unwrap(objects[0])
+                if found is not None:
+                    return found
+            # Otherwise treat each parsed object as an action
+            return objects
 
         # All strategies failed — return a single fallback action so the UI
         # degrades gracefully rather than showing nothing

@@ -561,7 +561,10 @@ if st.session_state.get("workflow_complete") and st.session_state.get("workflow_
 
     # ── Zone 1: Action list (admission only) ─────────────────────────────────
     if is_admission and "action_extraction" in outputs:
-        actions = ActionExtractionAgent.parse_actions(outputs["action_extraction"])
+        raw_ae = outputs["action_extraction"]
+        with st.expander("🐛 [DEBUG] Raw action_extraction output", expanded=False):
+            st.text(raw_ae[:3000])
+        actions = ActionExtractionAgent.parse_actions(raw_ae)
 
         if "completed_actions" not in st.session_state:
             st.session_state["completed_actions"] = set()
