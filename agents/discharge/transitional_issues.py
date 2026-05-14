@@ -86,19 +86,15 @@ Output format:
 
 ## Transitional Care Issues — DRAFT
 
-**[N] issues identified across [M] categories. Physician must review each before signing.**
+**[N] issues identified. Physician must review each before signing.**
 
 ---
 
 ### URGENT — Act within 1 week
 
-**Issue [N]: [Title]**
-- Action required: [Specific test, visit, or intervention]
-- Responsible provider: [PCP / Cardiology / Nephrology / etc.]
-- Timeframe: [e.g., within 1 week, within 2 weeks]
-- Source: [Exactly where this came from — e.g., "Creatinine 1.8 on discharge BMP, baseline 1.5-1.7, new diuretic dose"]
-- Context: [Why this matters clinically]
-- ⚠ Access note: [Flag if insurance, distance, or social situation may complicate follow-through]
+**[Title]** — [Provider] — [Timeframe]
+- [1 sentence: what to do and why, citing source]
+- ⚠ [Access/logistics note — only include if relevant]
 
 ---
 
@@ -108,22 +104,9 @@ Output format:
 
 ---
 
-### MONITORING — Ongoing, no fixed deadline
+### MONITORING — Ongoing
 
 [Same format as above]
-
----
-
-### Items NOT requiring follow-up (and why)
-[List any items that were considered and ruled out — demonstrates thoroughness and helps the physician trust the list is complete]
-
----
-
-**Physician checklist before signing:**
-- [ ] Each item has a named responsible provider
-- [ ] Timeframes are realistic given this patient's insurance and access
-- [ ] Patient has been counseled on items marked urgent
-- [ ] No incidental findings have been left without a follow-up plan
 
 Rules:
 - Use evidence-based timeframes where applicable (e.g., BMP within 1 week of \
