@@ -620,6 +620,12 @@ if st.session_state.get("workflow_complete") and st.session_state.get("workflow_
 
         st.divider()
 
+    # ── Zone 1b: Discharge checklist (discharge only) ────────────────────────
+    if not is_admission and "discharge_checklist" in outputs:
+        with st.expander("☑️ Physician Sign-Off Checklist", expanded=True):
+            st.markdown(outputs["discharge_checklist"])
+        st.divider()
+
     # ── Zone 2: Safety check banner ───────────────────────────────────────────
     if "safety_check" in outputs:
         safety_text = outputs["safety_check"]
@@ -631,11 +637,29 @@ if st.session_state.get("workflow_complete") and st.session_state.get("workflow_
         ):
             st.markdown(safety_text)
 
+    # ── Zone 2b: Discharge physician review sections ───────────────────────────
+    if not is_admission:
+        if "discharge_summary" in outputs:
+            with st.expander("📋 Draft Discharge Summary — Physician Review", expanded=False):
+                st.markdown(outputs["discharge_summary"])
+
+        if "medication_reconciliation" in outputs:
+            with st.expander("💊 Medication Reconciliation — Physician Review", expanded=False):
+                st.markdown(outputs["medication_reconciliation"])
+
+        if "patient_instructions" in outputs:
+            with st.expander("📄 Patient Instructions (After-Visit Summary)", expanded=False):
+                st.markdown(outputs["patient_instructions"])
+
     # ── Zone 3: Full agent outputs (collapsed) ────────────────────────────────
     _internal = {"safety_check", "context_synthesis", "action_extraction"}
+    _discharge_promoted = set() if is_admission else {
+        "discharge_checklist", "discharge_summary",
+        "medication_reconciliation", "patient_instructions",
+    }
     with st.expander("📄 Full Agent Outputs", expanded=False):
         for step_name, content in outputs.items():
-            if step_name in _internal:
+            if step_name in _internal or step_name in _discharge_promoted:
                 continue
             friendly = step_name.replace("_", " ").title()
             st.markdown(f"##### {friendly}")
