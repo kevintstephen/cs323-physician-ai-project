@@ -399,6 +399,42 @@ if discharge_clicked:
     )
 
 # ---------------------------------------------------------------------------
+# Discharge checklist — interactive checkboxes
+# ---------------------------------------------------------------------------
+
+def _parse_discharge_checklist(text: str) -> list[dict]:
+    """Parse discharge checklist markdown into sections with item text."""
+    sections = []
+    current = None
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("### "):
+            current = {"header": stripped[4:], "items": []}
+            sections.append(current)
+        elif stripped.startswith("- [ ] ") and current is not None:
+            current["items"].append(stripped[6:])
+    return sections
+
+
+def _render_discharge_checklist(sections: list[dict]) -> None:
+    """Render parsed checklist sections as interactive Streamlit checkboxes."""
+    all_keys = [f"chk_{abs(hash(item))}" for s in sections for item in s["items"]]
+    total = len(all_keys)
+    done = sum(1 for k in all_keys if st.session_state.get(k, False))
+
+    if total:
+        st.progress(done / total, text=f"{done} of {total} items complete")
+
+    for section in sections:
+        if not section["items"]:
+            continue
+        st.markdown(f"**{section['header']}**")
+        for item in section["items"]:
+            st.checkbox(item, key=f"chk_{abs(hash(item))}")
+        st.markdown("")
+
+
+# ---------------------------------------------------------------------------
 # Prescription drafting — on-demand agent with tool use
 # (defined before the results block so they're in scope when called)
 # ---------------------------------------------------------------------------
@@ -623,7 +659,11 @@ if st.session_state.get("workflow_complete") and st.session_state.get("workflow_
     # ── Zone 1b: Discharge checklist (discharge only) ────────────────────────
     if not is_admission and "discharge_checklist" in outputs:
         with st.expander("☑️ Physician Sign-Off Checklist", expanded=True):
-            st.markdown(outputs["discharge_checklist"])
+            sections = _parse_discharge_checklist(outputs["discharge_checklist"])
+            if sections:
+                _render_discharge_checklist(sections)
+            else:
+                st.markdown(outputs["discharge_checklist"])
         st.divider()
 
     # ── Zone 2: Safety check banner ───────────────────────────────────────────

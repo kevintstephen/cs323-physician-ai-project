@@ -29,7 +29,10 @@ Check for:
 4. Sections marked [VERIFY] that contain high-stakes information with no assigned owner
 5. Missing safety-critical workup — only flag if a lab or finding is clearly abnormal \
 (not borderline or within normal limits) and undocumented. Do not flag normal or \
-borderline values simply because they appear in the patient data but not the note.
+borderline values simply because they appear in the patient data but not the note. \
+Example of what NOT to flag: troponin at or near the 99th percentile cutoff (e.g., 0.04 ng/mL) \
+when the hospital course documents serial trending and ACS ruled out — that is a documented \
+workup, not a missing one.
 
 Output format:
 ## Safety Review

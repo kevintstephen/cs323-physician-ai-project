@@ -44,7 +44,10 @@ Rules:
 - Every incidental imaging finding must appear with a named responsible provider confirmed
 - Medication reconciliation flags marked ⚠ must each become a checklist item
 - Do not include actions already completed during the admission
+- Do not include generic tasks true of every discharge (e.g., "write discharge order", "print discharge papers") — only patient-specific actions
 - Do not duplicate — one item per distinct action
+- Consolidate related items: "Confirm BMP and weight check at cardiology follow-up" not two separate items
+- Aim for 8–12 items total across all sections. If you have more, consolidate
 - Keep items short enough to scan in 2 seconds
 - If there are no items in a section, omit that section header"""
 
