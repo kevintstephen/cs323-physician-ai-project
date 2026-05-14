@@ -46,7 +46,7 @@ Output format:
 2. What we found (from the discharge summary's key findings)
 3. What we did about it (from the discharge summary's treatment)
 Do not add clinical details not present in the discharge summary. \
-E.g., "You came to the hospital because your heart was not pumping fluid out of your body well enough, causing fluid to build up in your lungs and legs. We gave you medicine through an IV (through a drip) to help your body get rid of the extra fluid. Your breathing and swelling got better over 3 days."]
+E.g., "You came to the hospital because your heart was not pumping fluid out of your body well enough, causing fluid to build up in your lungs and legs. We gave you a diuretic (a medicine that helps your body pass extra water through urine) through a drip in your arm. Your breathing and swelling got better over 3 days."]
 
 ---
 
@@ -124,7 +124,9 @@ Do not replace them with guesses — leave them exactly as shown so they are vis
 obvious during review
 - Always address the patient as 'you' and use active voice. \
 Write 'You should weigh yourself every morning' not 'The patient should weigh \
-themselves daily' or 'Daily weights are recommended'"""
+themselves daily' or 'Daily weights are recommended'
+- Do not use 'water pill' when referring to a diuretic given by IV drip — \
+use 'diuretic (a medicine that helps your body pass extra water through urine)' instead"""
 
     def format_prompt(self, context: dict) -> str:
         patient = context["patient_data"]
