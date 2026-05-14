@@ -399,8 +399,24 @@ if discharge_clicked:
     )
 
 # ---------------------------------------------------------------------------
-# Discharge checklist — interactive checkboxes
+# Discharge checklist — interactive checklist (mirrors admission action list)
 # ---------------------------------------------------------------------------
+
+_CHECKLIST_SECTION_CONFIG = {
+    "before placing the discharge order": ("📝", "Before Discharge Order"),
+    "before the patient leaves":          ("🚶", "Before Patient Leaves"),
+    "confirm is arranged":                ("✅", "Confirm Arranged"),
+}
+
+
+def _match_section(header: str) -> tuple[str, str]:
+    """Match a checklist header to its icon and short label."""
+    lower = header.lower().strip()
+    for key, (icon, label) in _CHECKLIST_SECTION_CONFIG.items():
+        if key in lower:
+            return icon, label
+    return "📋", header
+
 
 def _parse_discharge_checklist(text: str) -> list[dict]:
     """Parse discharge checklist markdown into sections with item text."""
@@ -409,7 +425,9 @@ def _parse_discharge_checklist(text: str) -> list[dict]:
     for line in text.splitlines():
         stripped = line.strip()
         if stripped.startswith("### "):
-            current = {"header": stripped[4:], "items": []}
+            raw_header = stripped[4:]
+            icon, label = _match_section(raw_header)
+            current = {"header": raw_header, "icon": icon, "label": label, "items": []}
             sections.append(current)
         elif stripped.startswith("- [ ] ") and current is not None:
             current["items"].append(stripped[6:])
@@ -417,21 +435,50 @@ def _parse_discharge_checklist(text: str) -> list[dict]:
 
 
 def _render_discharge_checklist(sections: list[dict]) -> None:
-    """Render parsed checklist sections as interactive Streamlit checkboxes."""
-    all_keys = [f"chk_{abs(hash(item))}" for s in sections for item in s["items"]]
-    total = len(all_keys)
-    done = sum(1 for k in all_keys if st.session_state.get(k, False))
+    """Render checklist in admission-style column layout with completed collapsible."""
+    if "dc_completed" not in st.session_state:
+        st.session_state["dc_completed"] = set()
+
+    all_items = [(s, item) for s in sections for item in s["items"]]
+    total = len(all_items)
+    done = len(st.session_state["dc_completed"])
 
     if total:
         st.progress(done / total, text=f"{done} of {total} items complete")
 
+    # Pending items grouped by section
     for section in sections:
-        if not section["items"]:
+        pending = [item for item in section["items"]
+                   if item not in st.session_state["dc_completed"]]
+        if not pending:
             continue
-        st.markdown(f"**{section['header']}**")
-        for item in section["items"]:
-            st.checkbox(item, key=f"chk_{abs(hash(item))}")
+
+        st.markdown(f"#### {section['icon']} {section['label']}")
+
+        for item in pending:
+            col_check, col_badge, col_content = st.columns([0.5, 1.5, 8])
+
+            if col_check.button("✓", key=f"dc_done_{abs(hash(item))}", help="Mark complete"):
+                st.session_state["dc_completed"].add(item)
+                st.rerun()
+
+            col_badge.markdown(
+                f"<span style='background:#f0f0f0;padding:2px 6px;"
+                f"border-radius:4px;font-size:0.75em'>{section['icon']}</span>",
+                unsafe_allow_html=True,
+            )
+
+            col_content.markdown(f"**{item}**")
+
         st.markdown("")
+
+    # Completed items — collapsed
+    completed_items = [item for s in sections for item in s["items"]
+                       if item in st.session_state["dc_completed"]]
+    if completed_items:
+        with st.expander(f"✅ Completed ({len(completed_items)})", expanded=False):
+            for item in completed_items:
+                st.markdown(f"~~{item}~~")
 
 
 # ---------------------------------------------------------------------------
@@ -682,6 +729,7 @@ if st.session_state.get("workflow_complete") and st.session_state.get("workflow_
     _discharge_promoted = set() if is_admission else {
         "discharge_checklist", "discharge_summary",
         "medication_reconciliation", "patient_instructions",
+        "transitional_issues",
     }
 
     if not is_admission:
@@ -693,6 +741,9 @@ if st.session_state.get("workflow_complete") and st.session_state.get("workflow_
         if "medication_reconciliation" in outputs:
             tab_labels.append("💊 Medication Reconciliation")
             tab_keys.append("medication_reconciliation")
+        if "transitional_issues" in outputs:
+            tab_labels.append("🔄 Transitional Issues")
+            tab_keys.append("transitional_issues")
         if "patient_instructions" in outputs:
             tab_labels.append("📄 Patient Instructions")
             tab_keys.append("patient_instructions")
