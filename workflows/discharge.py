@@ -4,6 +4,7 @@ from agents.discharge.medication_reconciliation import MedicationReconciliationA
 from agents.discharge.transitional_issues import TransitionalIssuesAgent
 from agents.discharge.patient_instructions import PatientInstructionsAgent
 from agents.safety import SafetyAgent
+from agents.discharge.action_extraction import DischargeActionExtractionAgent
 from workflows.engine import WorkflowStep
 
 # ---------------------------------------------------------------------------
@@ -29,6 +30,11 @@ from workflows.engine import WorkflowStep
 #
 # Step 6 — SafetyAgent
 #   Audits the full discharge package before it reaches the physician.
+#
+# Step 7 — DischargeActionExtractionAgent
+#   Reads all prior outputs and produces a single physician sign-off checklist
+#   ranked by when each action must happen (before order, before leaving,
+#   confirm is arranged). Runs last so it can include safety flags.
 # ---------------------------------------------------------------------------
 
 DISCHARGE_STEPS: list[WorkflowStep] = [
@@ -63,5 +69,11 @@ DISCHARGE_STEPS: list[WorkflowStep] = [
         name="safety_check",
         agent_class=SafetyAgent,
         context_keys=["discharge_summary", "medication_reconciliation", "transitional_issues"],
+    ),
+    WorkflowStep(
+        name="discharge_checklist",
+        agent_class=DischargeActionExtractionAgent,
+        context_keys=["discharge_summary", "medication_reconciliation",
+                      "transitional_issues", "safety_check"],
     ),
 ]

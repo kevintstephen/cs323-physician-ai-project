@@ -1,0 +1,156 @@
+{
+  "patient_id": "TEST-001",
+  "name": "John Smith",
+  "age": 67,
+  "sex": "M",
+  "admission_date": "2026-05-06",
+  "discharge_date": "2026-05-10",
+  "admitting_diagnosis": "Acute decompensated heart failure",
+
+  "vitals_at_admission": {
+    "heart_rate": 98,
+    "blood_pressure": "148/92",
+    "respiratory_rate": 22,
+    "o2_saturation": 91,
+    "temperature_celsius": 37.1,
+    "weight_kg": 94
+  },
+
+  "ed_assessment": "67-year-old male with history of CHF presenting with 3 days of worsening shortness of breath and bilateral lower extremity edema. Patient reports he has been compliant with his medications. Exam notable for elevated JVP, bilateral crackles at lung bases, and 2+ bilateral pitting edema to the knees. CXR shows pulmonary vascular congestion and small bilateral pleural effusions. ECG with left bundle branch block (known prior). Concern for acute CHF exacerbation. Starting IV Lasix 80mg. Cardiology aware. Will admit to medicine for diuresis and optimization.",
+
+  "handoff_notes": "67M CHF exac, hemodynamically stable. Getting IV diuresis — check UOP q4h. BMP in AM. Echo ordered (no prior here). Cardiology following. Watch creatinine — baseline 1.5-1.7, currently 1.8. Patient is full code.",
+
+  "daily_progress_notes": [
+    {
+      "date": "2026-05-07",
+      "time": "07:45",
+      "author": "Dr. Patel (Medicine Resident)",
+      "note": "S: Patient reports mild improvement overnight. Still cannot lie flat — sleeping on 3 pillows. Denies chest pain. Reports he urinated a lot overnight.\n\nO: T 36.9, HR 86, BP 142/88, RR 18, O2 94% on 2L NC. Weight 92.4 kg (down 1.6 kg). UOP overnight 1,840 mL. JVP ~10 cm at 45 degrees. Lungs: bibasilar crackles improved from admission, L>R. Ext: 2+ pitting edema bilateral ankles/shins (improved from knees yesterday).\n\nLabs (0600): Na 140, K 3.8, Cr 1.9, BUN 36, Glu 104, Mg 1.8\n\nA/P:\n1. Acute decompensated HF — responding to diuresis. Net negative ~1.6L. Continue IV Lasix 80mg BID. Goal net negative 1-1.5L/day.\n2. CKD — Cr up slightly to 1.9 from 1.8. Expected with diuresis. Monitor BMP daily. Hold metformin while Cr elevated.\n3. Echo ordered — pending scheduling.\n4. Cardiology following."
+    },
+    {
+      "date": "2026-05-08",
+      "time": "08:10",
+      "author": "Dr. Patel (Medicine Resident)",
+      "note": "S: Breathing somewhat better but more fatigued today. Legs less swollen. Still sleeping upright.\n\nO: T 37.0, HR 82, BP 136/82, RR 17, O2 95% on 2L NC. Weight 91.2 kg (down 1.2 kg, 2.8 kg total). UOP overnight 2,040 mL. JVP ~8 cm. Lungs: crackles decreased, faint at right base only. Ext: 1-2+ pitting edema bilateral ankles.\n\nLabs (0600): Na 141, K 3.9, Cr 2.1, BUN 42, Glu 118, Mg 1.7\n\nEcho performed this AM — prelim read pending cardiology.\n\nA/P:\n1. HF — continued improvement but Cr bumped to 2.1. Concerned for prerenal azotemia from aggressive diuresis. Reduce IV Lasix to 80mg once daily (from BID). Recheck BMP tomorrow.\n2. CKD — Cr 2.1, above baseline 1.5-1.7. Metformin still on hold.\n3. Cardiology fellow aware, will see patient this afternoon."
+    },
+    {
+      "date": "2026-05-09",
+      "time": "07:30",
+      "author": "Dr. Patel (Medicine Resident)",
+      "note": "S: Significant improvement. Breathing much better. Slept lying down for first time in weeks — only 1 pillow. Walking the hallway without SOB. Appetite returning.\n\nO: T 36.8, HR 78, BP 130/78, RR 15, O2 97% on room air (weaned off O2 overnight). Weight 90.1 kg (down 1.1 kg, 3.9 kg total). UOP overnight 1,620 mL. JVP ~5-6 cm. Lungs: clear bilaterally. Ext: trace pitting edema bilateral ankles.\n\nLabs (0600): Na 139, K 4.1, Cr 1.9, BUN 40, Glu 110, Mg 1.9\n\nCardiology note from yesterday reviewed — see consult.\n\nA/P:\n1. HF — significantly improved. Down ~4 kg. Off O2. Transition to oral Lasix 80mg daily (uptitrated from home 40mg). Plan discharge tomorrow if stable.\n2. CKD — Cr 1.9, trending back to baseline. Resume metformin at discharge — Cr near baseline, PCP follow-up in 1 week.\n3. Discharge planning: PCP in 1 week for BMP, cardiology in 4-6 weeks. Counseled on daily weights. Low-sodium diet reinforced."
+    },
+    {
+      "date": "2026-05-10",
+      "time": "09:00",
+      "author": "Dr. Patel (Medicine Resident)",
+      "note": "S: Feeling well. Breathing at baseline. Ambulating independently. Ready to go home.\n\nO: T 36.9, HR 76, BP 128/80, RR 14, O2 98% on room air. Weight 90.0 kg. Lungs clear. No edema.\n\nLabs (0600): Na 140, K 4.1, Cr 1.8, BUN 38, Glu 106\n\nA/P: Medically stable for discharge. Cr back to baseline 1.8. Off O2. Down 4 kg. Discharge on oral Lasix 80mg daily. Resume all home meds including metformin."
+    }
+  ],
+
+  "nursing_notes": [
+    {
+      "date": "2026-05-06", "time": "22:00",
+      "note": "Patient admitted from ED at 1830. IV Lasix 80mg given 1900. UOP since admission 640 mL. SOB at rest, HOB elevated 60 degrees. 2L NC in place, O2 sat 93%. Patient anxious, wife at bedside."
+    },
+    {
+      "date": "2026-05-07", "time": "06:00",
+      "note": "Overnight UOP 1,840 mL. Patient resting, HOB 45 degrees. O2 sat 94% on 2L. Daily weight 92.4 kg."
+    },
+    {
+      "date": "2026-05-08", "time": "06:00",
+      "note": "Overnight UOP 2,040 mL. Patient c/o fatigue. O2 sat 95% on 2L. Daily weight 91.2 kg. Ambulated to bathroom independently."
+    },
+    {
+      "date": "2026-05-09", "time": "06:00",
+      "note": "Overnight UOP 1,620 mL. Patient reports sleeping much better — one pillow only. O2 weaned to room air at 0200, sat 96-97%. Daily weight 90.1 kg. Ambulated hallway x2 without desaturation."
+    },
+    {
+      "date": "2026-05-10", "time": "06:00",
+      "note": "Overnight UOP 1,200 mL. Patient comfortable. O2 sat 98% on room air. Daily weight 90.0 kg. Discharge teaching completed — daily weights, low-sodium diet, when to return to ED. Patient verbalized understanding."
+    }
+  ],
+
+  "lab_results": [
+    {"timestamp": "2026-05-06 14:30", "panel": "BMP",            "sodium": 138, "potassium": 4.2, "creatinine": 1.8, "bun": 32, "glucose": 112},
+    {"timestamp": "2026-05-06 14:30", "panel": "CBC",            "wbc": 8200, "hemoglobin": 11.2, "hematocrit": 33.6, "platelets": 214000},
+    {"timestamp": "2026-05-06 14:30", "panel": "BNP",            "bnp": 1240},
+    {"timestamp": "2026-05-06 14:30", "panel": "Troponin",       "troponin_i": 0.04},
+    {"timestamp": "2026-05-06 20:00", "panel": "Troponin repeat","troponin_i": 0.03, "note": "Stable, not trending — ACS unlikely"},
+    {"timestamp": "2026-05-07 06:00", "panel": "BMP",            "sodium": 140, "potassium": 3.8, "creatinine": 1.9, "bun": 36, "glucose": 104, "magnesium": 1.8},
+    {"timestamp": "2026-05-07 06:00", "panel": "BNP",            "bnp": 890},
+    {"timestamp": "2026-05-08 06:00", "panel": "BMP",            "sodium": 141, "potassium": 3.9, "creatinine": 2.1, "bun": 42, "glucose": 118, "magnesium": 1.7},
+    {"timestamp": "2026-05-09 06:00", "panel": "BMP",            "sodium": 139, "potassium": 4.1, "creatinine": 1.9, "bun": 40, "glucose": 110, "magnesium": 1.9},
+    {"timestamp": "2026-05-10 06:00", "panel": "BMP",            "sodium": 140, "potassium": 4.1, "creatinine": 1.8, "bun": 38, "glucose": 106}
+  ],
+
+  "consult_notes": [
+    {
+      "service": "Cardiology",
+      "date": "2026-05-08",
+      "time": "16:30",
+      "author": "Dr. Nguyen (Cardiology Fellow), reviewed with Dr. Arora (Attending)",
+      "note": "Thank you for this consult on Mr. Smith, a 67M with ischemic cardiomyopathy (EF 30-35%), severe 3-vessel CAD (cath 2025-05-03, patient declined revascularization), HTN, CKD stage 3, and T2DM, presenting with acute decompensated heart failure.\n\nEchocardiogram reviewed (2026-05-08): EF 30-35%, unchanged from prior. Moderate mitral regurgitation, consistent with prior. No new regional wall motion abnormalities. Mild diastolic dysfunction. No pericardial effusion.\n\nTroponin trend reviewed — peak 0.04, stable. Likely chronic elevation in setting of CKD and HF. Not consistent with acute MI.\n\nRecommendations:\n1. Continue GDMT: lisinopril 10mg, carvedilol 12.5mg BID, aspirin 81mg, atorvastatin 40mg. No changes at this time.\n2. Furosemide — recommend uptitrating to 80mg PO daily at discharge. Second CHF admission in 6 months; prior dose of 40mg appears insufficient for maintenance.\n3. Revascularization — re-discussed with patient today. Patient continues to decline intervention. Will revisit at outpatient follow-up in 4-6 weeks. Risks of medical-only management discussed.\n4. ICD/CRT — EF persistently 30-35% on GDMT. If remains below 35% at outpatient follow-up, discuss ICD candidacy per ACC/AHA guidelines.\n5. Arrange outpatient cardiology follow-up in 4-6 weeks."
+    }
+  ],
+
+  "medications_administered": [
+    {"date": "2026-05-06", "time": "19:00", "drug": "Furosemide",  "dose": "80mg",  "route": "IV"},
+    {"date": "2026-05-07", "time": "08:00", "drug": "Furosemide",  "dose": "80mg",  "route": "IV"},
+    {"date": "2026-05-07", "time": "20:00", "drug": "Furosemide",  "dose": "80mg",  "route": "IV"},
+    {"date": "2026-05-07", "time": "09:00", "drug": "Lisinopril",  "dose": "10mg",  "route": "PO"},
+    {"date": "2026-05-07", "time": "09:00", "drug": "Carvedilol",  "dose": "12.5mg","route": "PO"},
+    {"date": "2026-05-07", "time": "21:00", "drug": "Carvedilol",  "dose": "12.5mg","route": "PO"},
+    {"date": "2026-05-07", "time": "09:00", "drug": "Aspirin",     "dose": "81mg",  "route": "PO"},
+    {"date": "2026-05-07", "time": "21:00", "drug": "Atorvastatin","dose": "40mg",  "route": "PO"},
+    {"note": "Metformin held throughout admission — Cr above baseline"},
+    {"date": "2026-05-08", "time": "08:00", "drug": "Furosemide",  "dose": "80mg",  "route": "IV", "note": "Reduced to once daily — Cr bumped to 2.1"},
+    {"date": "2026-05-09", "time": "08:00", "drug": "Furosemide",  "dose": "80mg",  "route": "PO", "note": "Transitioned to oral — Cr improving"},
+    {"date": "2026-05-10", "time": "08:00", "drug": "Furosemide",  "dose": "80mg",  "route": "PO"}
+  ],
+
+  "pmh": [
+    "Congestive heart failure (EF 30-35%)",
+    "Coronary artery disease",
+    "Hypertension",
+    "CKD stage 3 (baseline creatinine 1.5-1.7)",
+    "Type 2 diabetes mellitus"
+  ],
+  "current_medications": [
+    "Lisinopril 10mg daily",
+    "Carvedilol 12.5mg twice daily",
+    "Furosemide 40mg daily",
+    "Aspirin 81mg daily",
+    "Atorvastatin 40mg nightly",
+    "Metformin 500mg twice daily"
+  ],
+  "allergies": [
+    {"drug": "Penicillin", "reaction": "rash"},
+    {"drug": "Sulfa",      "reaction": "hives"}
+  ],
+  "prior_hospitalizations": [
+    {
+      "date": "2025-11-12",
+      "reason": "CHF exacerbation",
+      "length_of_stay_days": 4,
+      "treatment": "IV diuresis (Lasix 80mg IV), discharged on Furosemide 40mg daily. Echo EF 30-35%, no change.",
+      "discharge_weight_kg": 89,
+      "transitional_issues": "PCP BMP in 1 week. Cardiology outpatient follow-up scheduled."
+    },
+    {
+      "date": "2025-05-03",
+      "reason": "CHF exacerbation",
+      "length_of_stay_days": 6,
+      "treatment": "IV diuresis. Cardiac cath — severe 3-vessel CAD, patient declined revascularization.",
+      "discharge_weight_kg": 87,
+      "transitional_issues": "Cardiology to re-discuss revascularization at 3-month follow-up."
+    },
+    {
+      "date": "2024-09-18",
+      "reason": "Pneumonia",
+      "length_of_stay_days": 5,
+      "treatment": "Ceftriaxone + azithromycin. Incidentally noted worsening EF on echo.",
+      "discharge_weight_kg": 86,
+      "transitional_issues": "PCP chest X-ray follow-up at 6 weeks."
+    }
+  ]
+}

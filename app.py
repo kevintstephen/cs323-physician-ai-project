@@ -399,6 +399,89 @@ if discharge_clicked:
     )
 
 # ---------------------------------------------------------------------------
+# Discharge checklist — interactive checklist (mirrors admission action list)
+# ---------------------------------------------------------------------------
+
+_CHECKLIST_SECTION_CONFIG = {
+    "before placing the discharge order": ("📝", "Before Discharge Order"),
+    "before the patient leaves":          ("🚶", "Before Patient Leaves"),
+    "confirm is arranged":                ("✅", "Confirm Arranged"),
+}
+
+
+def _match_section(header: str) -> tuple[str, str]:
+    """Match a checklist header to its icon and short label."""
+    lower = header.lower().strip()
+    for key, (icon, label) in _CHECKLIST_SECTION_CONFIG.items():
+        if key in lower:
+            return icon, label
+    return "📋", header
+
+
+def _parse_discharge_checklist(text: str) -> list[dict]:
+    """Parse discharge checklist markdown into sections with item text."""
+    sections = []
+    current = None
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("### "):
+            raw_header = stripped[4:]
+            icon, label = _match_section(raw_header)
+            current = {"header": raw_header, "icon": icon, "label": label, "items": []}
+            sections.append(current)
+        elif stripped.startswith("- [ ] ") and current is not None:
+            current["items"].append(stripped[6:])
+    return sections
+
+
+def _render_discharge_checklist(sections: list[dict]) -> None:
+    """Render checklist in admission-style column layout with completed collapsible."""
+    if "dc_completed" not in st.session_state:
+        st.session_state["dc_completed"] = set()
+
+    all_items = [(s, item) for s in sections for item in s["items"]]
+    total = len(all_items)
+    done = len(st.session_state["dc_completed"])
+
+    if total:
+        st.progress(done / total, text=f"{done} of {total} items complete")
+
+    # Pending items grouped by section
+    for section in sections:
+        pending = [item for item in section["items"]
+                   if item not in st.session_state["dc_completed"]]
+        if not pending:
+            continue
+
+        st.markdown(f"#### {section['icon']} {section['label']}")
+
+        for item in pending:
+            col_check, col_badge, col_content = st.columns([0.5, 1.5, 8])
+
+            if col_check.button("✓", key=f"dc_done_{abs(hash(item))}", help="Mark complete"):
+                st.session_state["dc_completed"].add(item)
+                st.rerun()
+
+            col_badge.markdown(
+                f"<span style='background:#f0f0f0;padding:2px 6px;"
+                f"border-radius:4px;font-size:0.75em'>{section['icon']}</span>",
+                unsafe_allow_html=True,
+            )
+
+            col_content.markdown(f"**{item}**")
+
+        st.markdown("")
+
+    # Completed items — collapsed
+    completed_items = [item for s in sections for item in s["items"]
+                       if item in st.session_state["dc_completed"]]
+    if completed_items:
+        with st.expander(f"✅ Completed ({len(completed_items)})", expanded=False):
+            for item in completed_items:
+                st.markdown(f"~~{item}~~")
+
+
+# ---------------------------------------------------------------------------
 # Prescription drafting — on-demand agent with tool use
 # (defined before the results block so they're in scope when called)
 # ---------------------------------------------------------------------------
@@ -620,6 +703,16 @@ if st.session_state.get("workflow_complete") and st.session_state.get("workflow_
 
         st.divider()
 
+    # ── Zone 1b: Discharge checklist inline (discharge only) ─────────────────
+    if not is_admission and "discharge_checklist" in outputs:
+        st.markdown("### ☑️ Physician Sign-Off Checklist")
+        sections = _parse_discharge_checklist(outputs["discharge_checklist"])
+        if sections:
+            _render_discharge_checklist(sections)
+        else:
+            st.markdown(outputs["discharge_checklist"])
+        st.divider()
+
     # ── Zone 2: Safety check banner ───────────────────────────────────────────
     if "safety_check" in outputs:
         safety_text = outputs["safety_check"]
@@ -631,16 +724,56 @@ if st.session_state.get("workflow_complete") and st.session_state.get("workflow_
         ):
             st.markdown(safety_text)
 
-    # ── Zone 3: Full agent outputs (collapsed) ────────────────────────────────
+    # ── Zone 3: Document tabs (discharge) / full outputs (admission) ──────────
     _internal = {"safety_check", "context_synthesis", "action_extraction"}
-    with st.expander("📄 Full Agent Outputs", expanded=False):
-        for step_name, content in outputs.items():
-            if step_name in _internal:
-                continue
-            friendly = step_name.replace("_", " ").title()
-            st.markdown(f"##### {friendly}")
-            st.markdown(content)
-            st.markdown("---")
+    _discharge_promoted = set() if is_admission else {
+        "discharge_checklist", "discharge_summary",
+        "medication_reconciliation", "patient_instructions",
+        "transitional_issues",
+    }
+
+    if not is_admission:
+        tab_labels = []
+        tab_keys = []
+        if "discharge_summary" in outputs:
+            tab_labels.append("📋 Discharge Summary")
+            tab_keys.append("discharge_summary")
+        if "medication_reconciliation" in outputs:
+            tab_labels.append("💊 Medication Reconciliation")
+            tab_keys.append("medication_reconciliation")
+        if "transitional_issues" in outputs:
+            tab_labels.append("🔄 Transitional Issues")
+            tab_keys.append("transitional_issues")
+        if "patient_instructions" in outputs:
+            tab_labels.append("📄 Patient Instructions")
+            tab_keys.append("patient_instructions")
+        # remaining outputs (e.g. inpatient_course)
+        extras = [k for k in outputs if k not in _internal and k not in _discharge_promoted]
+        if extras:
+            tab_labels.append("📂 Full Outputs")
+            tab_keys.append("__extras__")
+
+        if tab_labels:
+            tabs = st.tabs(tab_labels)
+            for tab, key in zip(tabs, tab_keys):
+                with tab:
+                    if key == "__extras__":
+                        for step_name in extras:
+                            friendly = step_name.replace("_", " ").title()
+                            st.markdown(f"##### {friendly}")
+                            st.markdown(outputs[step_name])
+                            st.markdown("---")
+                    else:
+                        st.markdown(outputs[key])
+    else:
+        with st.expander("📄 Full Agent Outputs", expanded=False):
+            for step_name, content in outputs.items():
+                if step_name in _internal or step_name in _discharge_promoted:
+                    continue
+                friendly = step_name.replace("_", " ").title()
+                st.markdown(f"##### {friendly}")
+                st.markdown(content)
+                st.markdown("---")
 
     # ── Prescription section (admission only) ─────────────────────────────────
     if is_admission:

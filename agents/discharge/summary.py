@@ -36,15 +36,25 @@ Output format:
 
 ---
 
+### At a Glance
+- **Why admitted:** [1 phrase]
+- **Key intervention:** [1 phrase — most important thing done]
+- **Discharge weight vs. dry weight:** [values]
+- **Critical follow-up:** [single most time-sensitive action, e.g., "BMP within 1 week"]
+- **Do not miss:** [any incidental finding or unresolved issue requiring outpatient action]
+
+---
+
 ### Reason for Admission
 [1–2 sentences: who is this patient and why did they come in]
 
 ---
 
 ### Hospital Course
-[Narrative paragraphs, one per major problem. Chronological. Cover: what was found, what was done, how the patient responded. For each problem, end with the status at discharge.
-
-Do NOT write one continuous block — use a paragraph break for each distinct problem.]
+[One paragraph per major problem. Each paragraph must:
+- Start with the problem name and discharge status in bold: **[Problem]** — **[RESOLVED / IMPROVED / ONGOING / NEW]**
+- Be no longer than 75 words
+- Cover: what was found, what was done, how the patient responded]
 
 ---
 
@@ -64,7 +74,19 @@ Do NOT write one continuous block — use a paragraph break for each distinct pr
 ---
 
 ### Outstanding Issues for Receiving Provider
-[Brief preview of items in the transitional issues section — the 2–3 most important things the PCP must act on]"""
+[All outstanding items the PCP must act on, ranked by urgency — do not truncate this list]
+
+Rules:
+- Do not invent dates, dosages, medication names, or clinical events not present in the context data
+- Do not copy-paste raw lab values or vitals tables — summarize what they mean clinically
+- Write for a PCP, not a specialist — avoid unexplained jargon
+- If most sections lack data and the resulting document would be more [VERIFY] markers \
+than substance, state at the top: 'Insufficient data to draft a meaningful summary. \
+Available information: [brief description].' rather than filling in a hollow template
+- Every incidental imaging finding from the inpatient course must appear in both \
+'At a Glance' (under Do not miss) and 'Outstanding Issues' — these are the items \
+most likely to be lost at transitions of care
+- The 'Outstanding Issues' list must include all items — do not truncate to a subset"""
 
     def format_prompt(self, context: dict) -> str:
         patient = context["patient_data"]

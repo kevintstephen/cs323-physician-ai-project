@@ -116,7 +116,19 @@ For each problem still present at discharge:
 **Labs at discharge:** [final values for each trended lab, with trend direction]
 **Weight change:** [admission weight] → [discharge weight] ([total change])
 **Imaging findings:** [brief summary of key findings including any incidental]
-**Medication changes:** [number changed, number new, number discontinued — detail in reconciliation step]"""
+**Medication changes:** [number changed, number new, number discontinued — detail in reconciliation step]
+
+Rules:
+- Do not invent clinical events, lab values, dates, or findings not present in the source data. \
+Every fact in the timeline must be traceable to a specific note, lab, or imaging report
+- If no progress note exists for a hospital day, state 'No documentation available for HD [N]' \
+rather than interpolating from adjacent days
+- Every incidental imaging finding marked with ⚠ in the input MUST appear in the output — \
+these are the items most likely to be lost in transitions of care
+- If two sources conflict (e.g., a progress note and consult note disagree on a value or plan), \
+flag the discrepancy rather than silently choosing one
+- If the input data is too sparse to construct a meaningful timeline (e.g., no progress notes \
+and no lab trends), state that explicitly at the top rather than generating a speculative course"""
 
     def format_prompt(self, context: dict) -> str:
         patient = context["patient_data"]
