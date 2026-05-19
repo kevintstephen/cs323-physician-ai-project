@@ -22,6 +22,9 @@ cp .env.example .env
 
 # 5. Run the admission workflow on sample patient data
 python main.py admission --patient TEST-001 --llm (gemini or default:anthropic)
+
+# 6. Open front-end with Streamlit
+streamlit run app.py
 ```
 
 The sample patient (TEST-001) is a 67-year-old CHF patient — a realistic EM case based on our physician interviews. No real patient data is used.

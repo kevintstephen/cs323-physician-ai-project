@@ -45,9 +45,19 @@ class BaseAgent(ABC):
         pass
 
     def run(self, context: dict, wiki: str = "") -> AgentOutput:
+        # Ground every agent in the requirement to cite the wiki
+        grounded_system_prompt = self.system_prompt
+        if wiki:
+            grounded_system_prompt += (
+                "\n\n## Grounding Requirement\n"
+                "When making clinical recommendations, drafting notes, or identifying action items, "
+                "you MUST explicitly cite the Doctor's Wiki if a relevant protocol or preference exists. "
+                "Use the format `[Wiki: Topic Name]`. If multiple topics apply, cite them all."
+            )
+
         response = self.backend.generate(
             model=self.model,
-            system_prompt=self.system_prompt,
+            system_prompt=grounded_system_prompt,
             wiki=wiki,
             user_prompt=self.format_prompt(context)
         )

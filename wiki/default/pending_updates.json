@@ -1,0 +1,12 @@
+[
+  {
+    "type": "protocol",
+    "header": "Heart failure exacerbation",
+    "content": "Target dry weight should be established and explicitly documented in the Assessment & Plan upon admission"
+  },
+  {
+    "type": "preference",
+    "header": "Documentation preferences",
+    "content": "Do not document or order serial cardiac biomarkers (troponins) for patients whose clinical presentation is clearly decompensated heart failure and does not warrant a diagnostic workup for ACS"
+  }
+]

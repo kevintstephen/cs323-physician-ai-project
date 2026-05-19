@@ -44,6 +44,7 @@ class WorkflowEngine:
         session: PatientSession,
         patient_context=None,
         workflow_name: str = "",
+        doctor_id: str = "default",
     ):
         """
         Generator that yields (step_name, output, state) after each step completes.
@@ -56,10 +57,13 @@ class WorkflowEngine:
           - After all steps complete, ContextSynthesisAgent distills the
             outputs into a WorkflowRecord and saves it to the context.
         workflow_name: used to label the WorkflowRecord (e.g. "admission").
+        doctor_id: used to identify which wiki to update.
         """
         from datetime import datetime, timezone
         from context.patient_context import WorkflowRecord
         from agents.context_synthesis import ContextSynthesisAgent
+        from agents.wiki_substrate import WikiSubstrateAgent
+        from wiki.loader import update_wiki
 
         # Build effective wiki: patient context first (most recent history),
         # then the stable doctor wiki. Patient context changes per run so it
@@ -104,6 +108,23 @@ class WorkflowEngine:
             # Yield synthesis as a named step so the UI can show it
             state.outputs["context_synthesis"] = synth_output.content
             yield "context_synthesis", synth_output, state
+
+            # --- Wiki Evolution (Substrate) ---
+            substrate = WikiSubstrateAgent(self.backend, self.model)
+            sub_output, updates = substrate.extract_updates(
+                wiki_content=self.wiki,
+                outputs=state.outputs
+            )
+            
+            # Stage updates for physician review instead of auto-applying
+            from wiki.loader import add_pending_updates
+            add_pending_updates(
+                doctor_id=doctor_id,
+                updates=updates
+            )
+
+            state.outputs["wiki_substrate"] = sub_output.content
+            yield "wiki_substrate", sub_output, state
 
         state.status = "complete"
 
