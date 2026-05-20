@@ -148,16 +148,23 @@ with st.sidebar:
 
 def render_pending_update_card(i: int, item: dict, doctor_id: str, suffix: str = "", expanded: bool = False):
     """Renders a single pending update card with Edit/Approve/Reject actions."""
-    label = f"✨ Wiki Suggestion: {item['header']}"
+    label = f"✨ [{item.get('category', 'General')}] {item['header']}"
     with st.expander(label, expanded=expanded):
-        new_content = st.text_area("Edit suggestion", value=item['content'], key=f"edit_{suffix}_{i}")
+        # Use current values if inputs removed
+        new_category = item.get('category', 'General')
+        new_topic = item['header']
+        new_content = st.text_area("", value=item['content'], key=f"edit_{suffix}_{i}", label_visibility="collapsed")
         
         col1, col2, col3 = st.columns([1, 1, 4])
         if col1.button("✅ Approve", key=f"app_{suffix}_{i}", type="primary"):
+            rules = [line.strip("- ").strip() for line in new_content.split("\n") if line.strip()]
+            update_data = [{"category": new_category, "topic": new_topic, "rules": rules}]
+            
             if item['type'] == 'protocol':
-                update_wiki(doctor_id, {item['header']: [new_content]}, {})
+                update_wiki(doctor_id, update_data, [])
             else:
-                update_wiki(doctor_id, {}, {item['header']: [new_content]})
+                update_wiki(doctor_id, [], update_data)
+            
             remove_pending_update(doctor_id, i)
             st.success("Wiki evolved.")
             st.rerun()
@@ -183,63 +190,115 @@ def render_wiki_management():
     # --- Part 1: Review Queue ---
     pending = get_pending_updates(doctor_id)
     if pending:
-        st.subheader(f"🔔 Pending Updates ({len(pending)})")
-        st.info("The Wiki Substrate agent extracted these new insights from recent workflows. Review and approve them to evolve your wiki.")
-        
-        for i, item in enumerate(pending):
-            render_pending_update_card(i, item, doctor_id, suffix="mgmt", expanded=True)
+        with st.expander(f"🔔 Pending Updates ({len(pending)})", expanded=False):
+            st.info("The Wiki Substrate agent extracted these new insights from recent workflows. Review and approve them to evolve your wiki.")
+            
+            for i, item in enumerate(pending):
+                render_pending_update_card(i, item, doctor_id, suffix="mgmt", expanded=True)
         st.divider()
 
     # --- Part 2: Current Wiki Content ---
     st.subheader("🖋 Current Wiki Content")
     
-    search_query = st.text_input("🔍 Search protocols and preferences", "").lower()
+    col_search, col_filter = st.columns([2, 1])
+    search_query = col_search.text_input("🔍 Search wiki...", "").lower()
     
     tab_protocols, tab_prefs = st.tabs(["📋 Clinical Protocols", "⚙️ Doctor Preferences"])
     
+    def parse_wiki_sections(content: str) -> list[dict]:
+        """Parses markdown into a list of {category, topic, body}."""
+        sections = []
+        current_cat = "General"
+        
+        lines = content.splitlines()
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            if line.startswith("## "):
+                current_cat = line[3:].strip()
+                i += 1
+            elif line.startswith("### "):
+                topic = line[4:].strip()
+                body_lines = []
+                i += 1
+                while i < len(lines) and not lines[i].startswith("#"):
+                    body_lines.append(lines[i])
+                    i += 1
+                sections.append({
+                    "category": current_cat,
+                    "topic": topic,
+                    "body": "\n".join(body_lines).strip()
+                })
+            else:
+                i += 1
+        return sections
+
     def render_wiki_editor(filename: str, title: str):
         content = get_wiki_file_content(doctor_id, filename)
-        # Parse into sections: [header, content]
-        sections = []
-        raw_sections = re.split(r'\n(##\s+)', "\n" + content)
-        if raw_sections[0].strip(): # handle text before first header
-             sections.append(["Intro", raw_sections[0].strip()])
+        sections = parse_wiki_sections(content)
         
-        for i in range(1, len(raw_sections), 2):
-            header = raw_sections[i+1].split('\n')[0].strip()
-            body = '\n'.join(raw_sections[i+1].split('\n')[1:]).strip()
-            sections.append([header, body])
+        categories = sorted(list(set(s['category'] for s in sections)))
+        filter_cat = col_filter.selectbox(f"Filter {title}", ["All"] + categories, key=f"filter_{filename}")
 
         # Filter sections
-        filtered = [s for s in sections if search_query in s[0].lower() or search_query in s[1].lower()]
+        filtered = [
+            s for s in sections 
+            if (filter_cat == "All" or s['category'] == filter_cat) and
+               (search_query in s['category'].lower() or search_query in s['topic'].lower() or search_query in s['body'].lower())
+        ]
         
         if not filtered:
-            st.caption("No matching sections found.")
+            st.caption("No matching topics found.")
         
-        for i, (header, body) in enumerate(filtered):
-            with st.expander(f"## {header}", expanded=False):
-                new_header = st.text_input("Header", value=header, key=f"h_{filename}_{i}")
-                new_body = st.text_area("Content", value=body, height=200, key=f"b_{filename}_{i}")
+        # Group by category for display
+        current_display_cat = None
+        for i, s in enumerate(filtered):
+            if s['category'] != current_display_cat:
+                st.markdown(f"#### {s['category']}")
+                current_display_cat = s['category']
+                
+            with st.expander(f"{s['topic']}", expanded=False):
+                # Use current values if inputs removed
+                new_cat = s['category']
+                new_topic = s['topic']
+                new_body = st.text_area("", value=s['body'], height=200, key=f"body_ed_{filename}_{i}", label_visibility="collapsed")
                 
                 c1, c2, _ = st.columns([1, 1, 4])
                 if c1.button("💾 Save", key=f"s_{filename}_{i}"):
                     # Reconstruct file
-                    new_file_content = ""
-                    for h, b in sections:
-                        if h == header: # update this section
-                            new_file_content += f"## {new_header}\n{new_body}\n\n"
+                    new_sections = []
+                    for orig in sections:
+                        if orig['topic'] == s['topic'] and orig['category'] == s['category']:
+                            new_sections.append({"category": new_cat, "topic": new_topic, "body": new_body})
                         else:
-                            new_file_content += f"## {h}\n{b}\n\n"
-                    save_wiki_file_content(doctor_id, filename, new_file_content)
-                    st.success("Section saved.")
+                            new_sections.append(orig)
+                    
+                    # Sort by category for consistency
+                    new_sections.sort(key=lambda x: x['category'])
+                    
+                    reconstructed = ""
+                    last_cat = None
+                    for ns in new_sections:
+                        if ns['category'] != last_cat:
+                            reconstructed += f"\n## {ns['category']}\n"
+                            last_cat = ns['category']
+                        reconstructed += f"### {ns['topic']}\n{ns['body']}\n\n"
+                    
+                    save_wiki_file_content(doctor_id, filename, reconstructed)
+                    st.success("Wiki updated.")
                     st.rerun()
                 
                 if c2.button("🗑 Delete", key=f"d_{filename}_{i}"):
-                    new_file_content = ""
-                    for h, b in sections:
-                        if h != header:
-                            new_file_content += f"## {h}\n{b}\n\n"
-                    save_wiki_file_content(doctor_id, filename, new_file_content)
+                    reconstructed = ""
+                    last_cat = None
+                    for orig in sections:
+                        if orig['topic'] == s['topic'] and orig['category'] == s['category']:
+                            continue
+                        if orig['category'] != last_cat:
+                            reconstructed += f"\n## {orig['category']}\n"
+                            last_cat = orig['category']
+                        reconstructed += f"### {orig['topic']}\n{orig['body']}\n\n"
+                    save_wiki_file_content(doctor_id, filename, reconstructed)
                     st.rerun()
 
     with tab_protocols:
