@@ -52,7 +52,8 @@ class BaseAgent(ABC):
                 "\n\n## Grounding Requirement\n"
                 "When making clinical recommendations, drafting notes, or identifying action items, "
                 "you MUST explicitly cite the Doctor's Wiki if a relevant protocol or preference exists. "
-                "Use the format `[Wiki: Topic Name]`. If multiple topics apply, cite them all."
+                "Use the format `[WikiID: XXXXXX]` where XXXXXX is the ID provided in the Wiki text. "
+                "If multiple rules apply, cite them all."
             )
 
         response = self.backend.generate(

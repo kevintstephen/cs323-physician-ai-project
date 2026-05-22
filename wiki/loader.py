@@ -1,17 +1,57 @@
 import os
 import re
 import json
+import hashlib
 from pathlib import Path
 
 
 WIKI_DIR = Path(__file__).parent
 
 
+def generate_id(category: str, topic: str, rule: str) -> str:
+    """Generates a stable, deterministic ID for a wiki rule."""
+    text = f"{category}:{topic}:{rule}".strip().lower()
+    return hashlib.md5(text.encode()).hexdigest()[:6]
+
+
+def parse_wiki_sections(content: str) -> list[dict]:
+    """Parses markdown into a list of {category, topic, rules}."""
+    sections = []
+    current_cat = "General"
+    
+    lines = content.splitlines()
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        if line.startswith("## "):
+            current_cat = line[3:].strip()
+            i += 1
+        elif line.startswith("### "):
+            topic = line[4:].strip()
+            rules = []
+            i += 1
+            while i < len(lines) and not lines[i].startswith("#"):
+                clean_line = lines[i].strip()
+                if clean_line.startswith("- "):
+                    rules.append(clean_line[2:])
+                elif clean_line:
+                    rules.append(clean_line)
+                i += 1
+            sections.append({
+                "category": current_cat,
+                "topic": topic,
+                "rules": rules
+            })
+        else:
+            i += 1
+    return sections
+
+
 def load_wiki(doctor_id: str = "default") -> str:
     """
     Loads all markdown files from wiki/<doctor_id>/ and returns them
-    as a single concatenated string. This string is injected into every
-    agent call so agents are grounded in this doctor's accumulated reasoning.
+    as a single concatenated string. Rules are prefixed with [ID: xxxxxx]
+    to allow agents to cite them precisely.
     """
     doctor_dir = WIKI_DIR / doctor_id
     if not doctor_dir.exists():
@@ -20,10 +60,44 @@ def load_wiki(doctor_id: str = "default") -> str:
     pages = []
     for md_file in sorted(doctor_dir.glob("*.md")):
         content = md_file.read_text().strip()
-        if content:
-            pages.append(f"### {md_file.stem.replace('_', ' ').title()}\n\n{content}")
+        if not content:
+            continue
+        
+        sections = parse_wiki_sections(content)
+        formatted_sections = []
+        for s in sections:
+            rules_with_ids = []
+            for r in s['rules']:
+                rule_id = generate_id(s['category'], s['topic'], r)
+                rules_with_ids.append(f"- [ID: {rule_id}] {r}")
+            
+            section_text = f"## {s['category']}\n### {s['topic']}\n" + "\n".join(rules_with_ids)
+            formatted_sections.append(section_text)
+            
+        pages.append(f"### File: {md_file.stem.replace('_', ' ').title()}\n\n" + "\n\n".join(formatted_sections))
 
     return "\n\n---\n\n".join(pages)
+
+
+def get_wiki_insight(doctor_id: str, insight_id: str) -> dict:
+    """Retrieves the specific rule content by its ID (case-insensitive)."""
+    doctor_dir = WIKI_DIR / doctor_id
+    if not doctor_dir.exists():
+        return {}
+
+    insight_id = insight_id.lower()
+    for md_file in doctor_dir.glob("*.md"):
+        content = md_file.read_text()
+        sections = parse_wiki_sections(content)
+        for s in sections:
+            for r in s['rules']:
+                if generate_id(s['category'], s['topic'], r).lower() == insight_id:
+                    return {
+                        "category": s['category'],
+                        "topic": s['topic'],
+                        "rule": r
+                    }
+    return {}
 
 
 def append_to_markdown(file_path: Path, new_data: list[dict]):

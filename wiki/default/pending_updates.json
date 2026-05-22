@@ -1,3 +1,44 @@
 [
-
+  {
+    "type": "protocol",
+    "category": "Medications",
+    "header": "Sulfa Allergy",
+    "content": "Always cross-reference reported sulfa allergies with sulfonamide-containing drugs (e.g., Furosemide) before administration\nVerify cross-reactivity risk with pharmacy or attending in cases of documented severe sulfa allergy (hives/anaphylaxis) [WikiID: 8350f7]"
+  },
+  {
+    "type": "preference",
+    "category": "Documentation",
+    "header": "Safety Check",
+    "content": "Perform a mandatory safety screen for drug-allergy interactions and unaddressed [VERIFY] tags before final note sign-off\nClearly flag physical exam deficiencies that preclude clinical accuracy in the assessment"
+  },
+  {
+    "type": "protocol",
+    "category": "Medications",
+    "header": "Sulfa Allergy",
+    "content": "Before initiating sulfonamide-derivative medications (e.g., Furosemide), always perform a safety check for potential cross-reactivity with documented sulfa allergies (hives/anaphylaxis).\nIf cross-reactivity is confirmed or suspected, evaluate for alternative agents (e.g., ethacrynic acid for loop diuretics)."
+  },
+  {
+    "type": "preference",
+    "category": "Communication Style",
+    "header": "Safety/High-Risk Tasks",
+    "content": "Include a 'Safety Review' section in workflow outputs to identify potential contraindications (e.g., medication allergies vs. planned treatments) prior to order entry."
+  },
+  {
+    "type": "protocol",
+    "category": "Diseases/Issues",
+    "header": "Heart failure exacerbation",
+    "content": "If LBBB is present on ECG, interpret with caution for signs of acute ischemia and note that it may obscure traditional ECG findings for ACS\nWhen patient reports strict medication compliance but presents with decompensation, consider dietary indiscretion, silent ischemia, or progression of underlying disease as triggers"
+  },
+  {
+    "type": "preference",
+    "category": "Documentation",
+    "header": "Admission notes",
+    "content": "Include baseline functional status (e.g., ADL independence, ambulation distance) in the HPI for patients with chronic disease"
+  },
+  {
+    "type": "preference",
+    "category": "Communication Style",
+    "header": "Safety/Verification",
+    "content": "Include a 'Safety Review' or 'Flag' section in handover/charting summaries to explicitly call out unverified high-stakes items or missing administrative data (e.g., admitting physician, disposition)"
+  }
 ]
