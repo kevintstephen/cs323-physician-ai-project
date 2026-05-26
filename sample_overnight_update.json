@@ -1,0 +1,32 @@
+{
+  "patient_id": "TEST-001",
+  "update_timestamp": "2026-05-09T07:15:00",
+  "update_type": "morning_rounds",
+  "updated_vitals": {
+    "weight_kg": 91.2,
+    "o2_saturation": 95,
+    "heart_rate": 82,
+    "blood_pressure": "134/80",
+    "respiratory_rate": 18
+  },
+  "updated_labs": {
+    "creatinine": 2.1,
+    "potassium": 3.4,
+    "sodium": 140,
+    "bun": 41,
+    "glucose": 108
+  },
+  "urine_output_last_24h_mL": 2350,
+  "new_results": {
+    "echocardiogram": "EF 30-35% (unchanged). New finding: moderate mitral regurgitation not documented on prior echo from November 2025. No significant pericardial effusion. Mildly dilated left atrium.",
+    "repeat_troponin_6h": 0.06
+  },
+  "overnight_events": "Patient received IV Furosemide 80mg x2 doses overnight per protocol. No acute events. Slept in intervals. Denies chest pain. Reports dyspnea improving — able to lie flat with one pillow vs. two at admission.",
+  "nursing_notes": "Bilateral lower extremity edema improved from 2+ to 1+ at knees. Lung exam with decreased crackles at bases bilaterally. Patient ambulatory to bathroom independently. Appetite fair — ate 60% of dinner. Patient expressed anxiety about going home alone, asked about home nursing.",
+  "case_management_update": {
+    "snf_application_status": "submitted",
+    "insurance_decision": "pending — expected by EOD today",
+    "home_health_referral": "initiated for visiting nurse and home PT if patient discharged to home",
+    "social_work_note": "Patient lives alone, daughter in Boston. Patient open to short-term rehab if needed."
+  }
+}

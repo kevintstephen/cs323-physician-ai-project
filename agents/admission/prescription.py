@@ -112,7 +112,8 @@ Draft the inpatient prescription orders. For each drug: look up FDA label info, 
             cache_read_tokens=response.cache_read_tokens,
         )
 
-    def parse_prescriptions(self, content: str) -> list[dict]:
+    @staticmethod
+    def parse_prescriptions(content: str) -> list[dict]:
         """
         Parses the JSON array from agent output.
         Returns an empty list with an error entry if parsing fails,

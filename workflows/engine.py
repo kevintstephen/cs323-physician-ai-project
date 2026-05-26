@@ -1,3 +1,5 @@
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from typing import Optional, Type
 
@@ -15,8 +17,8 @@ class WorkflowStep:
     agent_class:  The BaseAgent subclass to instantiate for this step.
     context_keys: Which prior step outputs to include in this agent's context.
                   If empty, only the raw patient session data is passed.
-    parallel_group: Steps sharing the same group number may run concurrently.
-                  (Reserved for future parallelism — engine currently runs sequentially.)
+    parallel_group: Steps sharing the same group number run concurrently
+                  via ThreadPoolExecutor. Sequential steps have None.
     """
 
     name: str
@@ -63,7 +65,7 @@ class WorkflowEngine:
         from context.patient_context import WorkflowRecord
         from agents.context_synthesis import ContextSynthesisAgent
         from agents.wiki_substrate import WikiSubstrateAgent
-        from wiki.loader import update_wiki
+        from wiki.loader import add_pending_updates
 
         # Build effective wiki: patient context first (most recent history),
         # then the stable doctor wiki. Patient context changes per run so it
@@ -78,53 +80,78 @@ class WorkflowEngine:
 
         state = WorkflowState(session=session)
 
-        for step in steps:
-            agent = step.agent_class(self.backend, self.model)
-            context = self._build_context(step, session, state)
-            output = agent.run(context, effective_wiki)
-            state.outputs[step.name] = output.content
-            yield step.name, output, state
+        i = 0
+        while i < len(steps):
+            step = steps[i]
 
-        # After all workflow steps complete, synthesize and persist context.
+            if step.parallel_group is None:
+                # Sequential step
+                agent = step.agent_class(self.backend, self.model)
+                context = self._build_context(step, session, state)
+                output = agent.run(context, effective_wiki)
+                state.outputs[step.name] = output.content
+                yield step.name, output, state
+                i += 1
+            else:
+                # Collect all consecutive steps sharing this parallel_group
+                group_id = step.parallel_group
+                group_steps = []
+                while i < len(steps) and steps[i].parallel_group == group_id:
+                    group_steps.append(steps[i])
+                    i += 1
+
+                # Run the group concurrently — each step only reads prior outputs
+                # (already in state.outputs) so there are no write-write conflicts.
+                step_results: dict = {}
+                with ThreadPoolExecutor(max_workers=len(group_steps)) as executor:
+                    future_to_step = {
+                        executor.submit(
+                            self._run_single_step, gs, session, state, effective_wiki
+                        ): gs
+                        for gs in group_steps
+                    }
+                    for future in as_completed(future_to_step):
+                        gs, output = future.result()
+                        step_results[gs.name] = output
+                        state.outputs[gs.name] = output.content
+
+                for gs in group_steps:
+                    yield gs.name, step_results[gs.name], state
+
+        # Post-processing (context synthesis + wiki substrate) runs in a
+        # background thread so the physician sees results immediately.
         if patient_context is not None:
-            synthesizer = ContextSynthesisAgent(self.backend, self.model)
-            synth_output, parsed = synthesizer.synthesize(
-                patient_id=session.patient_id,
-                workflow_name=workflow_name or "workflow",
-                outputs=state.outputs,
-            )
+            frozen_outputs = dict(state.outputs)
 
-            record = WorkflowRecord(
-                workflow=workflow_name or "workflow",
-                timestamp=datetime.now(timezone.utc).isoformat(),
-                summary=parsed.get("summary", ""),
-                key_findings=parsed.get("key_findings", []),
-                open_issues=parsed.get("open_issues", []),
-                resolved_issues=parsed.get("resolved_issues", []),
-            )
-            patient_context.add_record(record)
-            patient_context.save()
+            def _post_process():
+                try:
+                    synthesizer = ContextSynthesisAgent(self.backend, self.model)
+                    _, parsed = synthesizer.synthesize(
+                        patient_id=session.patient_id,
+                        workflow_name=workflow_name or "workflow",
+                        outputs=frozen_outputs,
+                    )
+                    record = WorkflowRecord(
+                        workflow=workflow_name or "workflow",
+                        timestamp=datetime.now(timezone.utc).isoformat(),
+                        summary=parsed.get("summary", ""),
+                        key_findings=parsed.get("key_findings", []),
+                        open_issues=parsed.get("open_issues", []),
+                        resolved_issues=parsed.get("resolved_issues", []),
+                    )
+                    patient_context.add_record(record)
+                    patient_context.save()
 
-            # Yield synthesis as a named step so the UI can show it
-            state.outputs["context_synthesis"] = synth_output.content
-            yield "context_synthesis", synth_output, state
+                    substrate = WikiSubstrateAgent(self.backend, self.model)
+                    _, updates = substrate.extract_updates(
+                        wiki_content=self.wiki,
+                        outputs=frozen_outputs,
+                    )
+                    add_pending_updates(doctor_id=doctor_id, updates=updates)
+                except Exception:
+                    pass  # Background failures must never surface to the physician
 
-            # --- Wiki Evolution (Substrate) ---
-            substrate = WikiSubstrateAgent(self.backend, self.model)
-            sub_output, updates = substrate.extract_updates(
-                wiki_content=self.wiki,
-                outputs=state.outputs
-            )
-            
-            # Stage updates for physician review instead of auto-applying
-            from wiki.loader import add_pending_updates
-            add_pending_updates(
-                doctor_id=doctor_id,
-                updates=updates
-            )
-
-            state.outputs["wiki_substrate"] = sub_output.content
-            yield "wiki_substrate", sub_output, state
+            threading.Thread(target=_post_process, daemon=True).start()
 
         state.status = "complete"
 
@@ -142,6 +169,13 @@ class WorkflowEngine:
 
         state.status = "complete"
         return state
+
+    def _run_single_step(self, step: WorkflowStep, session: PatientSession, state: WorkflowState, wiki: str):
+        """Run one step and return (step, output). Safe to call from threads."""
+        agent = step.agent_class(self.backend, self.model)
+        context = self._build_context(step, session, state)
+        output = agent.run(context, wiki)
+        return step, output
 
     def _build_context(
         self, step: WorkflowStep, session: PatientSession, state: WorkflowState
