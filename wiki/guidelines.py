@@ -3,8 +3,10 @@ Guideline API — allows physicians to search clinical guidelines and
 attach their personal notes and interpretations to them in the wiki.
 """
 
+import re
 from pathlib import Path
-from wiki.loader import parse_wiki_sections, get_wiki_file_content, save_wiki_file_content, append_to_markdown
+from wiki.loader import parse_wiki_sections, get_wiki_file_content, save_wiki_file_content, append_to_markdown, generate_id
+from tools.pubmed import PubMedClient
 
 
 def search_guidelines(query: str, doctor_id: str = "default") -> list[dict]:
@@ -32,8 +34,6 @@ def search_guidelines(query: str, doctor_id: str = "default") -> list[dict]:
     return results
 
 
-import re
-
 def add_guideline_note(topic: str, guideline_text: str, note_type: str, note_content: str, doctor_id: str = "default"):
     """
     Adds or updates a note (e.g., 'Physician Notes', 'Rationale') to a specific 
@@ -44,13 +44,13 @@ def add_guideline_note(topic: str, guideline_text: str, note_type: str, note_con
     
     updated = False
     # Clean up search text
-    guideline_text_clean = re.sub(r"^\[ID:\s*[a-f0-9]{6}\]\s*", "", guideline_text).lower().strip()
+    guideline_text_clean = re.sub(r"^\[ID:\s*[^\]]+\]\s*", "", guideline_text).lower().strip()
     
     for s in sections:
         if s['topic'].lower() == topic.lower():
             for r in s['rules']:
                 # Clean up rule text
-                r_text_clean = re.sub(r"^\[ID:\s*[a-f0-9]{6}\]\s*", "", r['text']).lower().strip()
+                r_text_clean = re.sub(r"^\[ID:\s*[^\]]+\]\s*", "", r['text']).lower().strip()
                 if r_text_clean == guideline_text_clean:
                     r['attributes'][note_type] = note_content
                     updated = True
@@ -73,3 +73,61 @@ def add_guideline_note(topic: str, guideline_text: str, note_type: str, note_con
             new_content += "\n"
         
         save_wiki_file_content(doctor_id, "guidelines.md", new_content)
+
+
+def save_guideline(category: str, topic: str, text: str, attributes: dict, doctor_id: str = "default"):
+    """
+    Saves a new guideline to the guidelines.md file.
+    """
+    content = get_wiki_file_content(doctor_id, "guidelines.md")
+    sections = parse_wiki_sections(content)
+    
+    # 1. Check if it already exists
+    text_clean = re.sub(r"^\[ID:\s*[^\]]+\]\s*", "", text).lower().strip()
+    for s in sections:
+        if s['category'].lower() == category.lower() and s['topic'].lower() == topic.lower():
+            for r in s['rules']:
+                if re.sub(r"^\[ID:\s*[^\]]+\]\s*", "", r['text']).lower().strip() == text_clean:
+                    # Update existing attributes
+                    r['attributes'].update(attributes)
+                    break
+            else:
+                # Add to existing topic
+                s['rules'].append({"text": text, "attributes": attributes})
+            break
+    else:
+        # Add new section
+        sections.append({
+            "category": category,
+            "topic": topic,
+            "rules": [{"text": text, "attributes": attributes}]
+        })
+
+    # 2. Reconstruct markdown
+    new_content = "# Clinical Guidelines\n\n"
+    current_cat = ""
+    for s in sections:
+        if s['category'] != current_cat:
+            new_content += f"## {s['category']}\n"
+            current_cat = s['category']
+        new_content += f"### {s['topic']}\n"
+        for r in s['rules']:
+            # Ensure it has an ID
+            if not re.match(r"^\[ID:\s*[^\]]+\]", r['text']):
+                rule_id = generate_id(s['category'], s['topic'], r['text'])
+                final_text = f"[ID: {rule_id}] {r['text']}"
+            else:
+                final_text = r['text']
+            
+            new_content += f"- {final_text}\n"
+            for k, v in r['attributes'].items():
+                new_content += f"  - {k}: {v}\n"
+        new_content += "\n"
+    
+    save_wiki_file_content(doctor_id, "guidelines.md", new_content)
+
+
+def search_pubmed(query: str) -> list[dict]:
+    """Wraps PubMedClient for the API."""
+    client = PubMedClient()
+    return client.search(query)

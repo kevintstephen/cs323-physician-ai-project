@@ -22,6 +22,7 @@ from wiki.loader import (
     update_wiki, get_wiki_file_content, save_wiki_file_content,
     get_wiki_insight, parse_wiki_sections
 )
+from wiki.guidelines import search_pubmed, save_guideline, search_guidelines
 from llm import AnthropicBackend, GeminiBackend
 from workflows.engine import WorkflowEngine
 from workflows.admission import ADMISSION_STEPS
@@ -46,14 +47,10 @@ st.set_page_config(
 st.markdown("""
 <style>
 /* ── Fonts: SF Pro on macOS, system-ui everywhere else ── */
-/* Only body + form controls need explicit rules.
-   Everything else inherits from body — this avoids clobbering
-   Streamlit's Material Icons ligature font on any icon element. */
 body {
     font-family: -apple-system, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
 }
-/* Browsers skip font-family inheritance for form controls — force it */
 button, input, textarea, select {
     font-family: inherit;
 }
@@ -150,8 +147,7 @@ p, li { color: #1C1C1E; }
     transform: translateY(-1px) !important;
 }
 
-/* ── Expanders: glass look without backdrop-filter ──── */
-/* backdrop-filter on Streamlit components breaks internal icon font rendering */
+/* ── Expanders: glass look ──── */
 [data-testid="stExpander"] {
     background: rgba(255,255,255,0.58) !important;
     border: 1px solid rgba(255,255,255,0.72) !important;
@@ -288,7 +284,6 @@ div[data-testid="stVerticalBlock"],
     color: #FF3B30;
 }
 
-
 /* ── Episode learnings card ─────────────────────────── */
 .insights-card {
     background: linear-gradient(135deg, rgba(88,86,214,0.08) 0%, rgba(255,255,255,0.52) 100%);
@@ -368,17 +363,15 @@ if "active_citation" not in st.session_state:
     st.session_state.active_citation = None
 
 # ---------------------------------------------------------------------------
-# Workflow output cache — survives page refreshes
+# Workflow output cache
 # ---------------------------------------------------------------------------
 
 _CACHE_DIR = Path("context/records")
-
 
 def _save_workflow_cache(patient_id: str, label: str, workflow_name: str, outputs: dict) -> None:
     _CACHE_DIR.mkdir(parents=True, exist_ok=True)
     path = _CACHE_DIR / f"{patient_id}_workflow_cache.json"
     path.write_text(json.dumps({"label": label, "workflow_name": workflow_name, "outputs": outputs}, indent=2))
-
 
 def _load_workflow_cache(patient_id: str) -> tuple:
     path = _CACHE_DIR / f"{patient_id}_workflow_cache.json"
@@ -389,7 +382,6 @@ def _load_workflow_cache(patient_id: str) -> tuple:
         return data.get("label"), data.get("workflow_name"), data.get("outputs", {})
     except Exception:
         return None, None, {}
-
 
 # ---------------------------------------------------------------------------
 # Shared Utilities
@@ -431,23 +423,13 @@ def get_related_updates(text: str, pending_list: list[dict]) -> list[int]:
             related_indices.append(i)
     return related_indices
 
-
 def render_content_with_citations(text: str, key_suffix: str, doctor_id: str = "default"):
-    """
-    Renders text cleanly and places [📚 Wiki] interactive buttons.
-    Supports [WikiID: xxxxxx], (WikiID: xxxxxx), and WikiID: xxxxxx.
-    """
+    """Renders text cleanly and places interactive wiki citation buttons."""
     if not text: return
-    
-    # regex to catch variations of the citation tag
     pattern = r'[\[\(]?WikiID:\s*([a-zA-Z0-9]+)[\]\)]?'
-    
-    # Clean text for display (remove raw tags and fix double spaces)
     display_text = re.sub(pattern, '', text).strip()
     display_text = re.sub(r'\s{2,}', ' ', display_text)
     st.markdown(display_text)
-    
-    # Render citations as interactive buttons
     citations = re.findall(pattern, text)
     if citations:
         cit_cols = st.columns([0.15] * 5 + [0.25])
@@ -457,12 +439,10 @@ def render_content_with_citations(text: str, key_suffix: str, doctor_id: str = "
                     st.session_state.active_citation = insight_id.lower()
                     st.rerun()
 
-
 def render_wiki_reference_card(doctor_id: str = "default"):
     """Renders the cited wiki quote in the sticky panel."""
     insight_id = st.session_state.get("active_citation")
     if not insight_id: return
-    
     insight = get_wiki_insight(doctor_id, insight_id)
     if insight:
         st.markdown(f'<div class="wiki-ref-box">', unsafe_allow_html=True)
@@ -479,7 +459,6 @@ def render_wiki_reference_card(doctor_id: str = "default"):
             st.session_state.active_citation = None
             st.rerun()
 
-
 # ---------------------------------------------------------------------------
 # Sidebar Navigation
 # ---------------------------------------------------------------------------
@@ -488,30 +467,12 @@ with st.sidebar:
     st.title("🏥 Physician AI")
     st.caption("Multi-agent clinical assistant")
     st.divider()
-
-    app_mode = st.radio(
-        "Navigation",
-        options=["Patient Workflows", "Wiki Management"],
-        index=0
-    )
-    
+    app_mode = st.radio("Navigation", options=["Patient Workflows", "Wiki Management"], index=0)
     st.divider()
-
     if app_mode == "Patient Workflows":
-        patient_id = st.selectbox(
-            "Patient",
-            options=["TEST-001"],
-            help="Select a patient to work with",
-        )
-
-        llm_provider = st.radio(
-            "LLM Provider",
-            options=["Anthropic", "Gemini"],
-            index=0,
-        )
-
+        patient_id = st.selectbox("Patient", options=["TEST-001"], help="Select a patient to work with")
+        llm_provider = st.radio("LLM Provider", options=["Anthropic", "Gemini"], index=0)
         st.divider()
-
         patient_ctx = PatientContext.load(patient_id)
         if patient_ctx.workflow_history:
             st.markdown("**Care Episode**")
@@ -522,24 +483,16 @@ with st.sidebar:
             if st.button("Reset patient context", type="secondary"):
                 PatientContext.clear(patient_id)
                 st.rerun()
-
         st.divider()
         st.markdown("**Demo**")
         _sample_path = Path("sample_overnight_update.json")
         if _sample_path.exists():
             _sample_bytes = _sample_path.read_bytes()
-            st.download_button(
-                "⬇ Download sample check-in file",
-                data=_sample_bytes,
-                file_name="sample_overnight_update.json",
-                mime="application/json",
-                use_container_width=True,
-            )
+            st.download_button("⬇ Download sample check-in file", data=_sample_bytes, file_name="sample_overnight_update.json", mime="application/json", use_container_width=True)
             if st.button("Use sample file →", use_container_width=True, type="secondary"):
                 st.session_state["checkin_sample_loaded"] = True
                 st.session_state["show_checkin"] = True
                 st.rerun()
-
     st.divider()
     st.caption("Stanford CS323 — AI Awakening")
 
@@ -553,7 +506,6 @@ def render_pending_update_card(i: int, item: dict, doctor_id: str, suffix: str =
     with st.expander(label, expanded=expanded):
         new_category = item.get('category', 'General')
         new_topic = item.get('header', 'Miscellaneous')
-        # Resilience: fallback to rules-based content if key missing
         default_content = item.get('content', '')
         if not default_content and "rules" in item:
             lines = []
@@ -565,43 +517,27 @@ def render_pending_update_card(i: int, item: dict, doctor_id: str, suffix: str =
                 else:
                     lines.append(f"- {r}")
             default_content = "\n".join(lines)
-            
         new_content = st.text_area("", value=default_content, key=f"edit_{suffix}_{i}", label_visibility="collapsed")
-        
         col1, col2, col3 = st.columns([1, 1, 4])
         if col1.button("✅ Approve", key=f"app_{suffix}_{i}", type="primary"):
-            # Use parse_wiki_sections to handle potentially edited markdown content
             dummy_content = f"## {new_category}\n### {new_topic}\n{new_content}"
             parsed_sections = parse_wiki_sections(dummy_content)
-            
             if parsed_sections:
                 rules = parsed_sections[0]['rules']
                 update_data = [{"category": new_category, "topic": new_topic, "rules": rules}]
-                
-                if item.get('type') == 'protocol':
-                    update_wiki(doctor_id, update_data, [])
-                else:
-                    update_wiki(doctor_id, [], update_data)
-                
+                if item.get('type') == 'protocol': update_wiki(doctor_id, update_data, [])
+                else: update_wiki(doctor_id, [], update_data)
                 remove_pending_update(doctor_id, i)
                 st.success("Wiki evolved.")
                 st.rerun()
-        
         if col2.button("❌ Reject", key=f"rej_{suffix}_{i}"):
             remove_pending_update(doctor_id, i)
             st.rerun()
 
-
 def render_wiki_management():
     st.header("📚 Doctor's Wiki & Preferences")
-    st.markdown(
-        "Grounding for all agents. Review new learnings from cases, "
-        "or manually edit your clinical protocols and preferences."
-    )
-    
+    st.markdown("Grounding for all agents. Review new learnings from cases, or manually edit your clinical protocols and preferences.")
     doctor_id = "default"
-    
-    # --- Part 1: Review Queue ---
     pending = get_pending_updates(doctor_id)
     if pending:
         with st.expander(f"🔔 Pending Updates ({len(pending)})", expanded=False):
@@ -610,68 +546,44 @@ def render_wiki_management():
                 render_pending_update_card(i, item, doctor_id, suffix="mgmt", expanded=True)
         st.divider()
 
-    # --- Part 2: Current Wiki Content ---
     st.subheader("🖋 Current Wiki Content")
-    
     col_search, col_filter = st.columns([2, 1])
     search_query = col_search.text_input("🔍 Search wiki...", "").lower()
-    
-    tab_protocols, tab_prefs = st.tabs(["📋 Clinical Protocols", "⚙️ Doctor Preferences"])
+    tab_protocols, tab_prefs, tab_lit = st.tabs(["📋 Clinical Protocols", "⚙️ Doctor Preferences", "📚 Literature & Guidelines"])
     
     def render_wiki_editor(filename: str, title: str):
         content = get_wiki_file_content(doctor_id, filename)
         sections = parse_wiki_sections(content)
-        
         categories = sorted(list(set(s['category'] for s in sections)))
         filter_cat = col_filter.selectbox(f"Filter {title}", ["All"] + categories, key=f"filter_{filename}")
-
-        filtered = [
-            s for s in sections 
-            if (filter_cat == "All" or s['category'] == filter_cat) and
-               (search_query in s['category'].lower() or search_query in s['topic'].lower() or any(search_query in (r['text'] if isinstance(r, dict) else r).lower() for r in s['rules']))
-        ]
-        
-        if not filtered:
-            st.caption("No matching topics found.")
-        
+        filtered = [s for s in sections if (filter_cat == "All" or s['category'] == filter_cat) and (search_query in s['category'].lower() or search_query in s['topic'].lower() or any(search_query in (r['text'] if isinstance(r, dict) else r).lower() for r in s['rules']))]
+        if not filtered: st.caption("No matching topics found.")
         current_display_cat = None
         for i, s in enumerate(filtered):
             if s['category'] != current_display_cat:
                 st.markdown(f"#### 📁 {s['category']}")
                 current_display_cat = s['category']
-                
             with st.expander(f"{s['topic']}", expanded=False):
-                new_cat = s['category']
-                new_topic = s['topic']
-                
-                # Format structured rules into markdown for the text area
+                new_cat, new_topic = s['category'], s['topic']
                 rule_lines = []
                 for r in s['rules']:
                     if isinstance(r, dict):
                         rule_lines.append(f"- {r['text']}")
-                        for k, v in r.get('attributes', {}).items():
-                            rule_lines.append(f"  - {k}: {v}")
-                    else:
-                        rule_lines.append(f"- {r}")
+                        for k, v in r.get('attributes', {}).items(): rule_lines.append(f"  - {k}: {v}")
+                    else: rule_lines.append(f"- {r}")
                 body_text = "\n".join(rule_lines)
-                
                 new_body = st.text_area("", value=body_text, height=200, key=f"body_ed_{filename}_{i}", label_visibility="collapsed")
-                
                 c1, c2, _ = st.columns([1, 1, 4])
                 if c1.button("💾 Save", key=f"s_{filename}_{i}"):
-                    # Use parse_wiki_sections to parse the potentially nested markdown edits
                     dummy_content = f"## {new_cat}\n### {new_topic}\n{new_body}"
                     parsed_new = parse_wiki_sections(dummy_content)
-                    
                     if parsed_new:
                         new_rules = parsed_new[0]['rules']
                         new_sections = []
                         for orig in sections:
                             if orig['topic'] == s['topic'] and orig['category'] == s['category']:
                                 new_sections.append({"category": new_cat, "topic": new_topic, "rules": new_rules})
-                            else:
-                                new_sections.append(orig)
-                        
+                            else: new_sections.append(orig)
                         new_sections.sort(key=lambda x: x['category'])
                         reconstructed = ""
                         last_cat = None
@@ -683,20 +595,15 @@ def render_wiki_management():
                             for r in ns['rules']:
                                 if isinstance(r, dict):
                                     reconstructed += f"- {r['text']}\n"
-                                    for k, v in r.get('attributes', {}).items():
-                                        reconstructed += f"  - {k}: {v}\n"
-                                else:
-                                    reconstructed += f"- {r}\n"
+                                    for k, v in r.get('attributes', {}).items(): reconstructed += f"  - {k}: {v}\n"
+                                else: reconstructed += f"- {r}\n"
                             reconstructed += "\n"
-                        
                         save_wiki_file_content(doctor_id, filename, reconstructed)
                         st.success("Wiki updated.")
                         st.rerun()
-                
                 if c2.button("🗑 Delete", key=f"d_{filename}_{i}"):
                     new_sections = [orig for orig in sections if not (orig['topic'] == s['topic'] and orig['category'] == s['category'])]
                     new_sections.sort(key=lambda x: x['category'])
-                    
                     reconstructed = ""
                     last_cat = None
                     for ns in new_sections:
@@ -707,39 +614,68 @@ def render_wiki_management():
                         for r in ns['rules']:
                             if isinstance(r, dict):
                                 reconstructed += f"- {r['text']}\n"
-                                for k, v in r.get('attributes', {}).items():
-                                    reconstructed += f"  - {k}: {v}\n"
-                            else:
-                                reconstructed += f"- {r}\n"
+                                for k, v in r.get('attributes', {}).items(): reconstructed += f"  - {k}: {v}\n"
+                            else: reconstructed += f"- {r}\n"
                         reconstructed += "\n"
                     save_wiki_file_content(doctor_id, filename, reconstructed)
                     st.rerun()
 
-    with tab_protocols:
-        render_wiki_editor("clinical_protocols.md", "Protocols")
-
-    with tab_prefs:
-        render_wiki_editor("preferences.md", "Preferences")
-
+    with tab_protocols: render_wiki_editor("clinical_protocols.md", "Protocols")
+    with tab_prefs: render_wiki_editor("preferences.md", "Preferences")
+    with tab_lit:
+        st.subheader("🔍 Search Clinical Literature (PubMed)")
+        lit_query = st.text_input("Find guidelines or studies...", placeholder="e.g. SGLT2 inhibitors heart failure", key="lit_search_input")
+        if lit_query:
+            results = search_pubmed(lit_query)
+            if not results: st.info("No results found on PubMed.")
+            for r in results:
+                with st.expander(f"📄 {r['title']}"):
+                    st.markdown(f"**Source:** {r['source']} ({r['pubdate']})")
+                    st.markdown(f"**Authors:** {', '.join(r['authors'])}")
+                    st.markdown(f"[View on PubMed]({r['url']})")
+                    st.divider()
+                    st.markdown("**Add to Wiki with My Interpretation**")
+                    cat_lit = st.text_input("Category", value="Clinical Guidelines", key=f"cat_{r['id']}")
+                    topic_lit = st.text_input("Topic", value="General", key=f"topic_{r['id']}")
+                    notes_lit = st.text_area("Physician Notes", placeholder="e.g., I adopt this for patients with...", key=f"notes_{r['id']}")
+                    rational_lit = st.text_area("Rationale", placeholder="Why adopt/defer?", key=f"rat_{r['id']}")
+                    if st.button("💾 Save to Wiki", key=f"save_lit_{r['id']}", type="primary"):
+                        attrs = {"Key Recommendation": r['title'], "Physician Notes": notes_lit, "Rationale": rational_lit, "Source": f"{r['source']} ({r['pubdate']})"}
+                        save_guideline(cat_lit, topic_lit, r['title'], attrs, doctor_id)
+                        st.success("Guideline added to wiki.")
+                        st.rerun()
+        st.divider()
+        st.subheader("➕ Add External Source (URL or File)")
+        with st.form("manual_lit_form"):
+            ext_url = st.text_input("Article URL / Link")
+            ext_file = st.file_uploader("Upload Article (PDF or Text)", type=["pdf", "txt", "md"])
+            ext_title = st.text_input("Article Title / Name")
+            ext_cat = st.text_input("Category", value="External Evidence")
+            ext_topic = st.text_input("Topic", value="General")
+            ext_notes = st.text_area("Physician Notes")
+            ext_rat = st.text_area("Rationale")
+            submitted = st.form_submit_button("💾 Save External Source to Wiki")
+            if submitted:
+                if not ext_title: st.error("Please provide a title.")
+                else:
+                    attrs = {"Physician Notes": ext_notes, "Rationale": ext_rat}
+                    if ext_url: attrs["URL"] = ext_url
+                    if ext_file: attrs["File"] = ext_file.name
+                    save_guideline(ext_cat, ext_topic, ext_title, attrs, doctor_id)
+                    st.success("External source added to wiki.")
+                    st.rerun()
 
 # ---------------------------------------------------------------------------
 # Patient Workflows View
 # ---------------------------------------------------------------------------
 
 def render_patient_workflows():
-    epic = get_epic()
-    wiki = get_wiki_text()
-
-    try:
-        patient_data = epic.get_patient(patient_id)
-    except Exception as e:
-        st.error(f"Could not load patient data: {e}")
-        st.stop()
-
+    epic, wiki = get_epic(), get_wiki_text()
+    try: patient_data = epic.get_patient(patient_id)
+    except Exception as e: st.error(f"Could not load patient data: {e}"); st.stop()
     vitals = patient_data.get("vitals", {})
     o2 = vitals.get("o2_saturation", "?")
     o2_class = "vital-chip alert" if isinstance(o2, (int, float)) and o2 < 95 else "vital-chip"
-
     st.markdown(f"""
 <div class="patient-header-card">
   <div class="patient-name">{patient_data.get('name', patient_id)}<span class="patient-meta">{patient_data.get('age', '?')} {patient_data.get('sex', '')}</span></div>
@@ -754,44 +690,31 @@ def render_patient_workflows():
   </div>
 </div>
 """, unsafe_allow_html=True)
-
-    # --- Expandable Chart ---
     with st.expander("📂 Patient Chart", expanded=True):
-        tab_overview, tab_labs, tab_meds, tab_ed, tab_history = st.tabs(
-            ["Overview", "Labs", "Medications & Allergies", "ED & Handoff Notes", "Prior Hospitalizations"]
-        )
-
+        tab_overview, tab_labs, tab_meds, tab_ed, tab_history = st.tabs(["Overview", "Labs", "Medications & Allergies", "ED & Handoff Notes", "Prior Hospitalizations"])
         with tab_overview:
             ov_col1, ov_col2 = st.columns(2)
             with ov_col1:
                 st.markdown("**Past Medical History**")
-                for item in patient_data.get("pmh", []):
-                    st.markdown(f"- {item}")
+                for item in patient_data.get("pmh", []): st.markdown(f"- {item}")
             with ov_col2:
                 st.markdown("**Baseline Functional Status**")
                 st.markdown(patient_data.get("baseline_functional_status", "Not documented"))
-
             st.markdown("**Vitals on Arrival**")
-            v = patient_data.get("vitals", {})
-            vcol1, vcol2, vcol3, vcol4, vcol5, vcol6 = st.columns(6)
+            v, vcol1, vcol2, vcol3, vcol4, vcol5, vcol6 = patient_data.get("vitals", {}), *st.columns(6)
             vcol1.metric("Heart Rate", f"{v.get('heart_rate', '?')} bpm")
             vcol2.metric("Blood Pressure", v.get("blood_pressure", "?"))
             vcol3.metric("Resp Rate", f"{v.get('respiratory_rate', '?')}/min")
             vcol4.metric("O₂ Sat", f"{v.get('o2_saturation', '?')}%")
             vcol5.metric("Temp", f"{v.get('temperature_celsius', '?')} °C")
             vcol6.metric("Weight", f"{v.get('weight_kg', '?')} kg")
-
         with tab_labs:
             labs = patient_data.get("labs", {})
             if labs:
-                rows = []
-                for key, value in labs.items():
-                    rows.append({"Test": key.replace("_", " ").title(), "Value": value})
+                rows = [{"Test": k.replace("_", " ").title(), "Value": v} for k, v in labs.items()]
                 import pandas as pd
                 st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
-            else:
-                st.caption("No labs on file.")
-
+            else: st.caption("No labs on file.")
         with tab_meds:
             med_col1, med_col2 = st.columns(2)
             with med_col1:
@@ -800,24 +723,19 @@ def render_patient_workflows():
             with med_col2:
                 st.markdown("**Allergies**")
                 for a in patient_data.get("allergies", []): st.markdown(f"- **{a.get('drug', '?')}** — {a.get('reaction', '?')}")
-
         with tab_ed:
             st.markdown("**ED Physician Assessment**")
             st.markdown(patient_data.get("ed_assessment", "No ED note on file."))
             st.divider()
             st.markdown("**Overnight Handoff Notes**")
             st.markdown(patient_data.get("handoff_notes", "No handoff notes on file."))
-
         with tab_history:
-            prior = patient_data.get("prior_hospitalizations", [])
-            for hosp in prior:
+            for hosp in patient_data.get("prior_hospitalizations", []):
                 label = f"{hosp.get('date', '?')} — {hosp.get('reason', '?')}  ({hosp.get('length_of_stay_days', '?')} days)"
                 with st.expander(label):
                     st.markdown(f"**Treatment:** {hosp.get('treatment', '—')}")
                     st.markdown(f"**Discharge weight:** {hosp.get('discharge_weight_kg', '?')} kg")
                     st.markdown(f"**Update follows:** {hosp.get('transitional_issues', '—')}")
-
-    # --- History Timeline ---
     patient_ctx = PatientContext.load(patient_id)
     if patient_ctx.workflow_history:
         with st.expander("🕓 Patient History", expanded=False):
@@ -831,7 +749,6 @@ def render_patient_workflows():
                     for issue in rec.open_issues: st.markdown(f"⚠️ {issue}")
                     for res in rec.resolved_issues: st.markdown(f"✅ {res}")
                 st.divider()
-
     st.divider()
     btn_col1, btn_col2, btn_col3 = st.columns(3)
 
@@ -841,18 +758,8 @@ def render_patient_workflows():
         try: session = session_fn()
         except Exception as e: st.error(f"Error loading session: {e}"); return
         ctx = PatientContext.load(patient_id)
-
-        st.session_state["active_workflow"] = label
-        st.session_state["workflow_outputs"] = {}
-        st.session_state["workflow_complete"] = False
-        st.session_state["completed_actions"] = set()
-        # Reset action card state for fresh run
-        for _k in ("prescription_drafts", "approved_orders", "rx_sent_to_epic",
-                   "labs_sent_to_epic", "note_saved", "note_emailed",
-                   "show_rx_dialog", "show_labs_dialog", "show_notes_dialog",
-                   "episode_wiki_saved"):
-            st.session_state.pop(_k, None)
-
+        st.session_state["active_workflow"], st.session_state["workflow_outputs"], st.session_state["workflow_complete"] = label, {}, False
+        for _k in ("prescription_drafts", "approved_orders", "rx_sent_to_epic", "labs_sent_to_epic", "note_saved", "note_emailed", "show_rx_dialog", "show_labs_dialog", "show_notes_dialog", "episode_wiki_saved"): st.session_state.pop(_k, None)
         with st.status(f"Running {label}...", expanded=True) as status:
             for step_name, output, state in engine.run_steps(steps, session, patient_context=ctx, workflow_name=workflow_name):
                 st.write(f"✓ {step_name.replace('_', ' ').title()}")
@@ -862,393 +769,196 @@ def render_patient_workflows():
         _save_workflow_cache(patient_id, label, workflow_name, st.session_state["workflow_outputs"])
         st.rerun()
 
-    if btn_col1.button("🏥 Admit Patient", use_container_width=True):
-        run_wf("Admission", "admission", ADMISSION_STEPS, lambda: epic.build_admission_session(patient_id))
+    if btn_col1.button("🏥 Admit Patient", use_container_width=True): run_wf("Admission", "admission", ADMISSION_STEPS, lambda: epic.build_admission_session(patient_id))
     if btn_col2.button("📋 Review Updates", use_container_width=True):
         st.session_state["show_checkin"] = not st.session_state.get("show_checkin", False)
         if not st.session_state["show_checkin"]:
-            for _k in ("checkin_result", "checkin_file_key", "checkin_sample_loaded",
-                       "ci_meds_sent", "ci_labs_sent", "ci_updates_saved",
-                       "show_ci_meds", "show_ci_labs", "show_ci_updates"):
-                st.session_state.pop(_k, None)
+            for _k in ("checkin_result", "checkin_file_key", "checkin_sample_loaded", "ci_meds_sent", "ci_labs_sent", "ci_updates_saved", "show_ci_meds", "show_ci_labs", "show_ci_updates"): st.session_state.pop(_k, None)
         st.rerun()
-    if btn_col3.button("🚪 Discharge Patient", use_container_width=True):
-        run_wf("Discharge", "discharge", DISCHARGE_STEPS, lambda: epic.get_discharge_session(patient_id))
-
-    # --- Results Display ---
-    # Restore from disk after a page refresh (session_state is empty but cache file exists)
+    if btn_col3.button("🚪 Discharge Patient", use_container_width=True): run_wf("Discharge", "discharge", DISCHARGE_STEPS, lambda: epic.get_discharge_session(patient_id))
     if not st.session_state.get("workflow_complete"):
         cached_label, cached_wf, cached_outputs = _load_workflow_cache(patient_id)
-        if cached_outputs:
-            st.session_state["workflow_complete"] = True
-            st.session_state["active_workflow"] = cached_label
-            st.session_state["workflow_outputs"] = cached_outputs
-
+        if cached_outputs: st.session_state["workflow_complete"], st.session_state["active_workflow"], st.session_state["workflow_outputs"] = True, cached_label, cached_outputs
     if st.session_state.get("workflow_complete"):
-        outputs = st.session_state["workflow_outputs"]
-        label = st.session_state.get("active_workflow")
-        pending_all = get_pending_updates("default")
+        outputs, label, pending_all = st.session_state["workflow_outputs"], st.session_state.get("active_workflow"), get_pending_updates("default")
         st.divider()
-
-        if label == "Admission":
-            render_admission_results(outputs, patient_data.get("name", patient_id), patient_id, pending_all)
-        elif label == "Discharge":
-            render_discharge_results(outputs, pending_all, patient_data.get("name", patient_id))
-
-    # --- Check-in panel (toggled by "Review Updates") ---
-    if st.session_state.get("show_checkin"):
-        st.divider()
-        render_checkin_inline(patient_id, patient_data, llm_provider, wiki)
+        if label == "Admission": render_admission_results(outputs, patient_data.get("name", patient_id), patient_id, pending_all)
+        elif label == "Discharge": render_discharge_results(outputs, pending_all, patient_data.get("name", patient_id))
+    if st.session_state.get("show_checkin"): st.divider(); render_checkin_inline(patient_id, patient_data, llm_provider, wiki)
 
 # ---------------------------------------------------------------------------
-# Check-in — dialogs + inline section
+# Check-in UI
 # ---------------------------------------------------------------------------
 
 _TREND_ICON = {"worsening": "▲", "improving": "▼", "stable": "→", "new": "★"}
 _URGENCY_ICON = {"now": "🔴", "today": "🟡", "routine": "⚪"}
 
-
 @st.dialog("💊 Medication Changes", width="large")
 def _dialog_ci_meds(med_actions: list):
-    st.caption("Review each change. Edit the order text, then send to Epic.")
     selected = []
     for i, action in enumerate(med_actions):
-        icon = _URGENCY_ICON.get(action.get("urgency", "routine"), "⚪")
-        st.markdown(f"{icon} **{action.get('title', '?')}**")
-        if action.get("detail"):
-            st.caption(action["detail"])
+        st.markdown(f"{_URGENCY_ICON.get(action.get('urgency', 'routine'), '⚪')} **{action.get('title', '?')}**")
+        if action.get("detail"): st.caption(action["detail"])
         edited = st.text_input("Order text", value=action.get("title", ""), key=f"ci_med_edit_{i}", label_visibility="collapsed")
-        include = st.checkbox("Include in order", value=True, key=f"ci_med_chk_{i}")
-        if include:
-            selected.append({**action, "title": edited})
+        if st.checkbox("Include in order", value=True, key=f"ci_med_chk_{i}"): selected.append({**action, "title": edited})
         st.divider()
-
     if st.button(f"Send {len(selected)} Order(s) to Epic", type="primary", use_container_width=True, disabled=not selected):
-        st.session_state["ci_meds_sent"] = True
-        st.session_state["show_ci_meds"] = False
+        st.session_state["ci_meds_sent"], st.session_state["show_ci_meds"] = True, False
         st.rerun()
-
 
 @st.dialog("🧪 Lab Orders", width="large")
 def _dialog_ci_labs(lab_actions: list):
-    if not lab_actions:
-        st.info("No lab orders in this update.")
-        return
-    st.caption("All labs recommended by the agent are pre-selected.")
-    st.divider()
+    if not lab_actions: st.info("No lab orders."); return
     selected = []
     for i, action in enumerate(lab_actions):
-        icon = _URGENCY_ICON.get(action.get("urgency", "routine"), "⚪")
-        checked = st.checkbox(f"{icon} **{action.get('title', '?')}**", value=True, key=f"ci_lab_chk_{i}")
-        if action.get("detail"):
-            st.caption(f"  {action['detail']}")
-        if checked:
-            selected.append(action)
-
+        if st.checkbox(f"{_URGENCY_ICON.get(action.get('urgency', 'routine'), '⚪')} **{action.get('title', '?')}**", value=True, key=f"ci_lab_chk_{i}"): selected.append(action)
+        if action.get("detail"): st.caption(f"  {action['detail']}")
     st.divider()
     if st.button(f"Send {len(selected)} Order(s) to Epic", type="primary", use_container_width=True, disabled=not selected):
-        st.session_state["ci_labs_sent"] = True
-        st.session_state["show_ci_labs"] = False
+        st.session_state["ci_labs_sent"], st.session_state["show_ci_labs"] = True, False
         st.rerun()
-
 
 @st.dialog("📋 Clinical Updates", width="large")
 def _dialog_ci_updates(changes: list, note_actions: list, patient_id: str):
-    st.caption("Overnight findings and note items. Edit the update, then save to the patient file.")
-
     if changes:
         st.markdown("**What changed:**")
-        for change in changes:
-            icon = _TREND_ICON.get(change.get("trend", ""), "•")
-            st.markdown(f"{icon} **{change.get('finding', '')}** — {change.get('significance', '')}")
+        for c in changes: st.markdown(f"{_TREND_ICON.get(c.get('trend', ''), '•')} **{c.get('finding', '')}** — {c.get('significance', '')}")
         st.divider()
-
-    # Build a pre-filled note update from note_item actions + changes
-    note_lines = []
-    for change in changes:
-        note_lines.append(f"- {change.get('finding', '')}: {change.get('significance', '')}")
-    for action in note_actions:
-        note_lines.append(f"- {action.get('title', '')}: {action.get('detail', '')}")
-    default_note = "\n".join(note_lines)
-
-    edited = st.text_area("Patient file update", value=default_note, height=300, key="ci_update_ta")
-
+    note_lines = [f"- {c.get('finding', '')}: {c.get('significance', '')}" for c in changes] + [f"- {a.get('title', '')}: {a.get('detail', '')}" for a in note_actions]
+    edited = st.text_area("Patient file update", value="\n".join(note_lines), height=300)
     c1, c2 = st.columns(2)
     if c1.button("Save to Patient File", type="primary", use_container_width=True):
         _CACHE_DIR.mkdir(parents=True, exist_ok=True)
         existing = (_CACHE_DIR / f"{patient_id}_note.md").read_text() if (_CACHE_DIR / f"{patient_id}_note.md").exists() else ""
         (_CACHE_DIR / f"{patient_id}_note.md").write_text(existing + f"\n\n---\n{edited}")
-        st.session_state["ci_updates_saved"] = True
-        st.session_state["show_ci_updates"] = False
+        st.session_state["ci_updates_saved"], st.session_state["show_ci_updates"] = True, False
         st.rerun()
     if c2.button("Email to Patient", use_container_width=True):
-        st.session_state["ci_updates_saved"] = True
-        st.session_state["show_ci_updates"] = False
+        st.session_state["ci_updates_saved"], st.session_state["show_ci_updates"] = True, False
         st.rerun()
-
 
 def _run_checkin_agent(patient_id: str, llm_provider: str, wiki: str, delta_data: dict):
     backend, model = get_backend(llm_provider)
-    agent = CheckInAgent(backend=backend, model=model)
-    ctx = PatientContext.load(patient_id)
-    effective_wiki = ctx.to_prompt_str() + ("\n\n" + wiki if wiki else "")
-    with st.spinner("Analyzing overnight changes..."):
-        output = agent.run({"patient_id": patient_id, "delta_data": delta_data}, wiki=effective_wiki)
+    agent, ctx = CheckInAgent(backend=backend, model=model), PatientContext.load(patient_id)
+    with st.spinner("Analyzing overnight changes..."): output = agent.run({"patient_id": patient_id, "delta_data": delta_data}, wiki=ctx.to_prompt_str() + ("\n\n" + wiki if wiki else ""))
     st.session_state["checkin_result"] = CheckInAgent.parse_result(output.content)
     st.rerun()
 
-
 def render_checkin_inline(patient_id: str, patient_data: dict, llm_provider: str, wiki: str):
     st.markdown("### Review Updates")
-
     result = st.session_state.get("checkin_result")
-
     if not result:
-        # File upload + sample shortcut
-        st.caption("Drop the overnight update JSON to generate new actions for this patient.")
         uploaded = st.file_uploader("Overnight update JSON", type=["json"], label_visibility="collapsed", key="ci_uploader")
-
-        # Load sample if sidebar button was pressed
         if st.session_state.get("checkin_sample_loaded") and not st.session_state.get("checkin_file_key"):
             _sample_path = Path("sample_overnight_update.json")
             if _sample_path.exists():
-                delta_data = json.loads(_sample_path.read_text())
                 st.session_state["checkin_file_key"] = "sample"
                 st.session_state.pop("checkin_sample_loaded", None)
-                _run_checkin_agent(patient_id, llm_provider, wiki, delta_data)
+                _run_checkin_agent(patient_id, llm_provider, wiki, json.loads(_sample_path.read_text()))
                 return
-
         if uploaded:
             file_key = f"{uploaded.name}_{uploaded.size}"
             if st.session_state.get("checkin_file_key") != file_key:
                 st.session_state["checkin_file_key"] = file_key
-                try:
-                    delta_data = json.loads(uploaded.read())
-                except json.JSONDecodeError:
-                    st.error("Invalid JSON file.")
-                    return
-                _run_checkin_agent(patient_id, llm_provider, wiki, delta_data)
+                try: _run_checkin_agent(patient_id, llm_provider, wiki, json.loads(uploaded.read()))
+                except Exception: st.error("Invalid JSON file.")
         return
-
-    # ── Parse action categories ───────────────────────────────────────────────
-    all_actions = result.get("actions", [])
-    changes = result.get("changes", [])
-    med_actions  = [a for a in all_actions if a.get("type") in ("medication_change", "medication_order")]
-    lab_actions  = [a for a in all_actions if a.get("type") == "lab_order"]
+    all_actions, changes = result.get("actions", []), result.get("changes", [])
+    med_actions = [a for a in all_actions if a.get("type") in ("medication_change", "medication_order")]
+    lab_actions = [a for a in all_actions if a.get("type") == "lab_order"]
     note_actions = [a for a in all_actions if a.get("type") == "note_item"]
-    # consults etc. go into updates card
-    other_actions = [a for a in all_actions if a.get("type") not in ("medication_change", "medication_order", "lab_order", "note_item")]
-    update_actions = note_actions + other_actions
-
-    ci_meds_done    = st.session_state.get("ci_meds_sent", False)
-    ci_labs_done    = st.session_state.get("ci_labs_sent", False)
-    ci_updates_done = st.session_state.get("ci_updates_saved", False)
-
-    meds_sub    = "✓ Sent to Epic" if ci_meds_done    else (f"{len(med_actions)} medication change(s)"  if med_actions    else "No changes")
-    labs_sub    = "✓ Sent to Epic" if ci_labs_done    else (f"{len(lab_actions)} lab order(s)"          if lab_actions    else "No orders")
-    updates_sub = "✓ Saved"        if ci_updates_done else (f"{len(changes)} finding(s), {len(update_actions)} note item(s)")
-
-    # ── Three action cards ────────────────────────────────────────────────────
+    update_actions = note_actions + [a for a in all_actions if a.get("type") not in ("medication_change", "medication_order", "lab_order", "note_item")]
+    ci_meds_done, ci_labs_done, ci_updates_done = st.session_state.get("ci_meds_sent", False), st.session_state.get("ci_labs_sent", False), st.session_state.get("ci_updates_saved", False)
+    meds_sub = "✓ Sent to Epic" if ci_meds_done else (f"{len(med_actions)} change(s)" if med_actions else "No changes")
+    labs_sub = "✓ Sent to Epic" if ci_labs_done else (f"{len(lab_actions)} order(s)" if lab_actions else "No orders")
+    updates_sub = "✓ Saved" if ci_updates_done else (f"{len(changes)} finding(s), {len(update_actions)} note item(s)")
     c1, c2, c3 = st.columns(3)
-
     with c1:
-        st.markdown(f"""
-<div class="action-card">
-  <div class="action-card-icon">💊</div>
-  <div class="action-card-title">Med Changes</div>
-  <div class="action-card-{'done' if ci_meds_done else 'sub'}">{meds_sub}</div>
-</div>""", unsafe_allow_html=True)
-        st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
-        if st.button("Review & Send →" if not ci_meds_done else "Review Again", key="ci_open_meds",
-                     type="primary" if not ci_meds_done else "secondary", use_container_width=True,
-                     disabled=not med_actions):
-            st.session_state["show_ci_meds"] = True
-
+        st.markdown(f'<div class="action-card"><div class="action-card-icon">💊</div><div class="action-card-title">Med Changes</div><div class="action-card-{"done" if ci_meds_done else "sub"}">{meds_sub}</div></div>', unsafe_allow_html=True)
+        if st.button("Review & Send →" if not ci_meds_done else "Review Again", key="ci_open_meds", type="primary" if not ci_meds_done else "secondary", use_container_width=True, disabled=not med_actions): st.session_state["show_ci_meds"] = True
     with c2:
-        st.markdown(f"""
-<div class="action-card">
-  <div class="action-card-icon">🧪</div>
-  <div class="action-card-title">Labs</div>
-  <div class="action-card-{'done' if ci_labs_done else 'sub'}">{labs_sub}</div>
-</div>""", unsafe_allow_html=True)
-        st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
-        if st.button("Review & Send →" if not labs_done else "Review Again", key="ci_open_labs",
-                     type="primary" if not labs_done else "secondary", use_container_width=True,
-                     disabled=not lab_actions):
-            st.session_state["show_ci_labs"] = True
-
+        st.markdown(f'<div class="action-card"><div class="action-card-icon">🧪</div><div class="action-card-title">Labs</div><div class="action-card-{"done" if ci_labs_done else "sub"}">{labs_sub}</div></div>', unsafe_allow_html=True)
+        if st.button("Review & Send →" if not ci_labs_done else "Review Again", key="ci_open_labs", type="primary" if not ci_labs_done else "secondary", use_container_width=True, disabled=not lab_actions): st.session_state["show_ci_labs"] = True
     with c3:
-        st.markdown(f"""
-<div class="action-card">
-  <div class="action-card-icon">📋</div>
-  <div class="action-card-title">Clinical Updates</div>
-  <div class="action-card-{'done' if ci_updates_done else 'sub'}">{updates_sub}</div>
-</div>""", unsafe_allow_html=True)
-        st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
-        if st.button("Review & Save →" if not ci_updates_done else "Review Again", key="ci_open_updates",
-                     type="primary" if not ci_updates_done else "secondary", use_container_width=True):
-            st.session_state["show_ci_updates"] = True
-
-    # ── Open dialogs ──────────────────────────────────────────────────────────
-    if st.session_state.get("show_ci_meds"):
-        _dialog_ci_meds(med_actions)
-    if st.session_state.get("show_ci_labs"):
-        _dialog_ci_labs(lab_actions)
-    if st.session_state.get("show_ci_updates"):
-        _dialog_ci_updates(changes, update_actions, patient_id)
-
-    # ── Reset ─────────────────────────────────────────────────────────────────
+        st.markdown(f'<div class="action-card"><div class="action-card-icon">📋</div><div class="action-card-title">Clinical Updates</div><div class="action-card-{"done" if ci_updates_done else "sub"}">{updates_sub}</div></div>', unsafe_allow_html=True)
+        if st.button("Review & Save →" if not ci_updates_done else "Review Again", key="ci_open_updates", type="primary" if not i_updates_done else "secondary", use_container_width=True): st.session_state["show_ci_updates"] = True
+    if st.session_state.get("show_ci_meds"): _dialog_ci_meds(med_actions)
+    if st.session_state.get("show_ci_labs"): _dialog_ci_labs(lab_actions)
+    if st.session_state.get("show_ci_updates"): _dialog_ci_updates(changes, update_actions, patient_id)
     st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
     if st.button("Upload new file", type="secondary", key="ci_reset"):
-        for _k in ("checkin_result", "checkin_file_key", "ci_meds_sent", "ci_labs_sent",
-                   "ci_updates_saved", "show_ci_meds", "show_ci_labs", "show_ci_updates"):
-            st.session_state.pop(_k, None)
+        for _k in ("checkin_result", "checkin_file_key", "ci_meds_sent", "ci_labs_sent", "ci_updates_saved", "show_ci_meds", "show_ci_labs", "show_ci_updates"): st.session_state.pop(_k, None)
         st.rerun()
 
-
 # ---------------------------------------------------------------------------
-# Prescription UI — editable cards, approve/discard, pharmacy queue
+# Prescription UI
 # ---------------------------------------------------------------------------
 
 def _render_rx_card(idx: int, rx: dict):
-    """Renders one editable prescription card with PA status and approve/discard buttons."""
-    pa_required = rx.get("pa_required", False)
-    pa_pct = rx.get("pa_likelihood_pct")
-    badge = (f"🔴 PA Required (~{pa_pct}% approval)" if pa_pct else "🔴 PA Required") if pa_required else "🟢 No PA Required"
-
+    pa_req, pa_pct = rx.get("pa_required", False), rx.get("pa_likelihood_pct")
+    badge = (f"🔴 PA Required (~{pa_pct}% approval)" if pa_pct else "🔴 PA Required") if pa_req else "🟢 No PA Required"
     with st.expander(f"**{rx.get('drug_name', '?')}** {rx.get('dose', '')} — {badge}", expanded=True):
         c1, c2, c3 = st.columns(3)
         drug_name = c1.text_input("Drug name", value=rx.get("drug_name", ""), key=f"rx_drug_{idx}")
-        dose      = c2.text_input("Dose",      value=rx.get("dose", ""),      key=f"rx_dose_{idx}")
-        route_opts = ["PO", "IV", "SQ", "inhaled", "topical"]
-        route = c3.selectbox(
-            "Route", route_opts,
-            index=route_opts.index(rx.get("route", "PO")) if rx.get("route", "PO") in route_opts else 0,
-            key=f"rx_route_{idx}",
-        )
-
+        dose, route_opts = c2.text_input("Dose", value=rx.get("dose", ""), key=f"rx_dose_{idx}"), ["PO", "IV", "SQ", "inhaled", "topical"]
+        route = c3.selectbox("Route", route_opts, index=route_opts.index(rx.get("route", "PO")) if rx.get("route", "PO") in route_opts else 0, key=f"rx_route_{idx}")
         c4, c5, c6 = st.columns(3)
-        frequency = c4.text_input("Frequency", value=rx.get("frequency", ""), key=f"rx_freq_{idx}")
-        quantity  = c5.text_input("Quantity",  value=rx.get("quantity", ""),  key=f"rx_qty_{idx}")
-        refills   = c6.text_input("Refills",   value=rx.get("refills", "0"),  key=f"rx_ref_{idx}")
-
-        indication = st.text_input("Indication", value=rx.get("indication", ""), key=f"rx_ind_{idx}")
+        freq, qty, ref = c4.text_input("Frequency", value=rx.get("frequency", ""), key=f"rx_freq_{idx}"), c5.text_input("Quantity", value=rx.get("quantity", ""), key=f"rx_qty_{idx}"), c6.text_input("Refills", value=rx.get("refills", "0"), key=f"rx_ref_{idx}")
+        ind = st.text_input("Indication", value=rx.get("indication", ""), key=f"rx_ind_{idx}")
         st.text_area("Agent notes / monitoring", value=rx.get("agent_notes", ""), height=80, key=f"rx_notes_{idx}")
-
-        if rx.get("drug_info_summary"):
-            st.caption(f"ℹ️ **Drug info:** {rx['drug_info_summary']}")
-        if rx.get("pa_notes"):
-            (st.warning if pa_required else st.caption)(f"**PA:** {rx['pa_notes']}")
-        if rx.get("alternatives"):
-            st.caption("**Alternatives:** " + " · ".join(rx["alternatives"]))
-
-        btn_col1, btn_col2, _ = st.columns([1, 1, 4])
-        if btn_col1.button("✓ Approve", key=f"approve_{idx}", type="primary"):
-            st.session_state["approved_orders"].append({
-                "_idx": idx,
-                "drug_name": drug_name,
-                "dose": dose,
-                "route": route,
-                "frequency": frequency,
-                "quantity": quantity,
-                "refills": refills,
-                "indication": indication,
-                "status": "pending_pharmacy",
-            })
+        if rx.get("drug_info_summary"): st.caption(f"ℹ️ **Drug info:** {rx['drug_info_summary']}")
+        if rx.get("pa_notes"): (st.warning if pa_req else st.caption)(f"**PA:** {rx['pa_notes']}")
+        if rx.get("alternatives"): st.caption("**Alternatives:** " + " · ".join(rx["alternatives"]))
+        b1, b2, _ = st.columns([1, 1, 4])
+        if b1.button("✓ Approve", key=f"approve_{idx}", type="primary"):
+            st.session_state["approved_orders"].append({"_idx": idx, "drug_name": drug_name, "dose": dose, "route": route, "frequency": freq, "quantity": qty, "refills": ref, "indication": ind, "status": "pending_pharmacy"})
             st.rerun()
-        if btn_col2.button("✗ Discard", key=f"discard_{idx}"):
-            st.session_state["approved_orders"].append({"_idx": idx, "status": "discarded"})
-            st.rerun()
-
+        if b2.button("✗ Discard", key=f"discard_{idx}"): st.session_state["approved_orders"].append({"_idx": idx, "status": "discarded"}); st.rerun()
 
 # ---------------------------------------------------------------------------
-# Admission action dialogs — Prescriptions, Labs, Note
+# Admission action dialogs
 # ---------------------------------------------------------------------------
 
 @st.dialog("💊 Prescriptions", width="large")
 def _dialog_prescriptions():
-    drafts = st.session_state.get("prescription_drafts", [])
-    approved_idxs = {o["_idx"] for o in st.session_state.get("approved_orders", [])}
+    drafts, approved_idxs = st.session_state.get("prescription_drafts", []), {o["_idx"] for o in st.session_state.get("approved_orders", [])}
     pending = [i for i in range(len(drafts)) if i not in approved_idxs]
-
-    if not drafts:
-        st.info("No prescription drafts available.")
-        return
-
-    if pending:
-        st.caption(f"{len(pending)} order(s) pending · Edit any field, then approve.")
-    else:
-        st.success("All orders reviewed.")
-
-    for idx in pending:
-        _render_rx_card(idx, drafts[idx])
-
-    # Approved orders summary + send button
+    if not drafts: st.info("No prescription drafts."); return
+    if pending: st.caption(f"{len(pending)} order(s) pending · Edit any field, then approve.")
+    else: st.success("All orders reviewed.")
+    for idx in pending: _render_rx_card(idx, drafts[idx])
     pharmacy_orders = [o for o in st.session_state.get("approved_orders", []) if o.get("status") == "pending_pharmacy"]
     if pharmacy_orders:
-        st.divider()
-        st.markdown(f"**{len(pharmacy_orders)} order(s) approved — ready to send**")
-        for o in pharmacy_orders:
-            st.markdown(f"- {o['drug_name']} {o['dose']} {o['route']} {o['frequency']}")
+        st.divider(); st.markdown(f"**{len(pharmacy_orders)} order(s) approved — ready to send**")
+        for o in pharmacy_orders: st.markdown(f"- {o['drug_name']} {o['dose']} {o['route']} {o['frequency']}")
         if st.button("Send All to Epic", type="primary", use_container_width=True):
-            st.session_state["rx_sent_to_epic"] = True
-            st.session_state["show_rx_dialog"] = False
+            st.session_state["rx_sent_to_epic"], st.session_state["show_rx_dialog"] = True, False
             st.rerun()
-
-    if st.button("🔄 Re-draft", type="secondary"):
-        st.session_state["prescription_drafts"] = []
-        st.session_state["approved_orders"] = []
-        st.session_state["show_rx_dialog"] = False
-        st.rerun()
-
+    if st.button("🔄 Re-draft", type="secondary"): st.session_state["prescription_drafts"], st.session_state["approved_orders"], st.session_state["show_rx_dialog"] = [], [], False; st.rerun()
 
 @st.dialog("🧪 Lab Orders", width="large")
 def _dialog_labs(lab_actions: list):
-    if not lab_actions:
-        st.info("No lab orders extracted.")
-        return
-
-    st.caption("Select orders to send. All are pre-selected based on agent recommendations.")
-    st.divider()
-
-    selected = []
-    urgency_icon = {"now": "🔴", "today": "🟡", "routine": "⚪"}
-    for i, action in enumerate(lab_actions):
-        icon = urgency_icon.get(action.get("urgency", "routine"), "⚪")
-        checked = st.checkbox(
-            f"{icon} **{action.get('title', '?')}**",
-            value=True,
-            key=f"lab_chk_{i}",
-        )
-        if checked:
-            selected.append(action)
-        if action.get("detail"):
-            st.caption(f"  {action['detail']}")
-
+    if not lab_actions: st.info("No lab orders extracted."); return
+    st.caption("Select orders to send."); st.divider(); selected, icon_map = [], {"now": "🔴", "today": "🟡", "routine": "⚪"}
+    for i, a in enumerate(lab_actions):
+        if st.checkbox(f"{icon_map.get(a.get('urgency', 'routine'), '⚪')} **{a.get('title', '?')}**", value=True, key=f"lab_chk_{i}"): selected.append(a)
+        if a.get("detail"): st.caption(f"  {a['detail']}")
     st.divider()
     if st.button(f"Send {len(selected)} Order(s) to Epic", type="primary", use_container_width=True, disabled=not selected):
-        st.session_state["labs_sent_to_epic"] = True
-        st.session_state["show_labs_dialog"] = False
+        st.session_state["labs_sent_to_epic"], st.session_state["show_labs_dialog"] = True, False
         st.rerun()
-
 
 @st.dialog("📋 Admission Note", width="large")
 def _dialog_notes(note_text: str, patient_id: str):
-    st.caption("Edit below, then save to patient file or email to patient.")
     edited = st.text_area("", value=note_text, height=450, label_visibility="collapsed", key="dialog_note_ta")
-
-    col1, col2 = st.columns(2)
-    if col1.button("Save to Patient File", type="primary", use_container_width=True):
-        _CACHE_DIR.mkdir(parents=True, exist_ok=True)
-        (_CACHE_DIR / f"{patient_id}_note.md").write_text(edited)
-        st.session_state["note_saved"] = True
-        st.session_state["show_notes_dialog"] = False
+    c1, c2 = st.columns(2)
+    if c1.button("Save to Patient File", type="primary", use_container_width=True):
+        _CACHE_DIR.mkdir(parents=True, exist_ok=True); (_CACHE_DIR / f"{patient_id}_note.md").write_text(edited)
+        st.session_state["note_saved"], st.session_state["show_notes_dialog"] = True, False
         st.rerun()
-    if col2.button("Email to Patient", use_container_width=True):
-        st.session_state["note_emailed"] = True
-        st.session_state["show_notes_dialog"] = False
+    if c2.button("Email to Patient", use_container_width=True):
+        st.session_state["note_emailed"], st.session_state["show_notes_dialog"] = True, False
         st.rerun()
-
 
 # ---------------------------------------------------------------------------
 # Results Rendering
@@ -1256,196 +966,65 @@ def _dialog_notes(note_text: str, patient_id: str):
 
 def render_admission_results(outputs: dict, patient_name: str, patient_id: str, pending_all: list):
     from agents.admission.prescription import PrescriptionDraftAgent as _PxAgent
-
-    # Seed prescription drafts from workflow output on first render
     if "prescription_draft" in outputs and not st.session_state.get("prescription_drafts"):
         rxs = _PxAgent.parse_prescriptions(outputs["prescription_draft"])
         if rxs:
             st.session_state["prescription_drafts"] = rxs
-            st.session_state.setdefault("approved_orders", [])
-
-    rxs = st.session_state.get("prescription_drafts", [])
-    approved_idxs = {o["_idx"] for o in st.session_state.get("approved_orders", [])}
+            if "approved_orders" not in st.session_state:
+                st.session_state["approved_orders"] = []
+    rxs, approved_idxs = st.session_state.get("prescription_drafts", []), {o["_idx"] for o in st.session_state.get("approved_orders", [])}
     rx_pending = len([i for i in range(len(rxs)) if i not in approved_idxs])
-
-    lab_actions = []
-    if "action_extraction" in outputs:
-        all_actions = ActionExtractionAgent.parse_actions(outputs["action_extraction"])
-        lab_actions = [a for a in all_actions if a.get("type") == "lab_order"]
-
+    lab_actions = [a for a in ActionExtractionAgent.parse_actions(outputs.get("action_extraction", "")) if a.get("type") == "lab_order"]
     note_text = outputs.get("note_draft", "")
-
-    # ── Three action cards ────────────────────────────────────────────────────
-    st.markdown("### Ready for Review")
-    c1, c2, c3 = st.columns(3)
-
-    rx_done = st.session_state.get("rx_sent_to_epic", False)
-    labs_done = st.session_state.get("labs_sent_to_epic", False)
-    note_done = st.session_state.get("note_saved", False) or st.session_state.get("note_emailed", False)
-
-    rx_sub = "✓ Sent to Epic" if rx_done else (f"{rx_pending} medication(s) to approve" if rx_pending else "All approved")
-    lab_sub = "✓ Sent to Epic" if labs_done else (f"{len(lab_actions)} lab order(s) to place" if lab_actions else "No orders")
-    note_sub = "✓ Saved" if note_done else "Admission note ready to sign"
-
+    st.markdown("### Ready for Review"); c1, c2, c3 = st.columns(3)
+    rx_done, labs_done, note_done = st.session_state.get("rx_sent_to_epic", False), st.session_state.get("labs_sent_to_epic", False), st.session_state.get("note_saved", False) or st.session_state.get("note_emailed", False)
+    rx_sub, lab_sub, note_sub = "✓ Sent to Epic" if rx_done else (f"{rx_pending} medication(s)" if rx_pending else "All approved"), "✓ Sent to Epic" if labs_done else (f"{len(lab_actions)} lab order(s)" if lab_actions else "No orders"), "✓ Saved" if note_done else "Admission note ready"
     with c1:
-        st.markdown(f"""
-<div class="action-card">
-  <div class="action-card-icon">💊</div>
-  <div class="action-card-title">Prescriptions</div>
-  <div class="action-card-{'done' if rx_done else 'sub'}">{rx_sub}</div>
-</div>""", unsafe_allow_html=True)
-        st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
-        if st.button("Review & Send →" if not rx_done else "Review Again", key="open_rx", use_container_width=True,
-                     type="primary" if not rx_done else "secondary", disabled=not rxs):
-            st.session_state["show_rx_dialog"] = True
-
+        st.markdown(f'<div class="action-card"><div class="action-card-icon">💊</div><div class="action-card-title">Prescriptions</div><div class="action-card-{"done" if rx_done else "sub"}">{rx_sub}</div></div>', unsafe_allow_html=True)
+        if st.button("Review & Send →" if not rx_done else "Review Again", key="open_rx", use_container_width=True, type="primary" if not rx_done else "secondary", disabled=not rxs): st.session_state["show_rx_dialog"] = True
     with c2:
-        st.markdown(f"""
-<div class="action-card">
-  <div class="action-card-icon">🧪</div>
-  <div class="action-card-title">Labs</div>
-  <div class="action-card-{'done' if labs_done else 'sub'}">{lab_sub}</div>
-</div>""", unsafe_allow_html=True)
-        st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
-        if st.button("Review & Send →" if not labs_done else "Review Again", key="open_labs", use_container_width=True,
-                     type="primary" if not labs_done else "secondary", disabled=not lab_actions):
-            st.session_state["show_labs_dialog"] = True
-
+        st.markdown(f'<div class="action-card"><div class="action-card-icon">🧪</div><div class="action-card-title">Labs</div><div class="action-card-{"done" if labs_done else "sub"}">{lab_sub}</div></div>', unsafe_allow_html=True)
+        if st.button("Review & Send →" if not labs_done else "Review Again", key="open_labs", use_container_width=True, type="primary" if not labs_done else "secondary", disabled=not lab_actions): st.session_state["show_labs_dialog"] = True
     with c3:
-        st.markdown(f"""
-<div class="action-card">
-  <div class="action-card-icon">📋</div>
-  <div class="action-card-title">Admission Note</div>
-  <div class="action-card-{'done' if note_done else 'sub'}">{note_sub}</div>
-</div>""", unsafe_allow_html=True)
-        st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
-        if st.button("Review & Sign →" if not note_done else "Review Again", key="open_note", use_container_width=True,
-                     type="primary" if not note_done else "secondary", disabled=not note_text):
-            st.session_state["show_notes_dialog"] = True
-
-    # ── Open dialogs based on session flags ───────────────────────────────────
-    if st.session_state.get("show_rx_dialog"):
-        _dialog_prescriptions()
-    if st.session_state.get("show_labs_dialog"):
-        _dialog_labs(lab_actions)
-    if st.session_state.get("show_notes_dialog"):
-        _dialog_notes(note_text, patient_id)
-
-    # ── Collapsed secondary outputs ───────────────────────────────────────────
-    st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
+        st.markdown(f'<div class="action-card"><div class="action-card-icon">📋</div><div class="action-card-title">Admission Note</div><div class="action-card-{"done" if note_done else "sub"}">{note_sub}</div></div>', unsafe_allow_html=True)
+        if st.button("Review & Sign →" if not note_done else "Review Again", key="open_note", use_container_width=True, type="primary" if not note_done else "secondary", disabled=not note_text): st.session_state["show_notes_dialog"] = True
+    if st.session_state.get("show_rx_dialog"): _dialog_prescriptions()
+    if st.session_state.get("show_labs_dialog"): _dialog_labs(lab_actions)
+    if st.session_state.get("show_notes_dialog"): _dialog_notes(note_text, patient_id)
     if "safety_check" in outputs:
-        with st.expander("Safety Check", expanded=False):
-            st.markdown(outputs["safety_check"])
-
+        with st.expander("Safety Check", expanded=False): st.markdown(outputs["safety_check"])
 
 def _render_episode_learnings(pending_all: list, patient_name: str, doctor_id: str = "default"):
-    """
-    Auto-saves all pending wiki updates at discharge and shows a compact
-    confirmation card. No physician action required.
-    """
-    if not pending_all:
-        return
-
-    # Auto-save once per discharge render (guard with session state)
+    if not pending_all: return
     if not st.session_state.get("episode_wiki_saved"):
-        protocols = [
-            {"category": p["category"], "topic": p["header"], "rules": p["rules"] if "rules" in p else p["content"].split("\n")}
-            for p in pending_all if p.get("type") == "protocol"
-        ]
-        preferences = [
-            {"category": p["category"], "topic": p["header"], "rules": p["rules"] if "rules" in p else p["content"].split("\n")}
-            for p in pending_all if p.get("type") != "protocol"
-        ]
+        protocols = [{"category": p["category"], "topic": p["header"], "rules": p["rules"] if "rules" in p else p["content"].split("\n")} for p in pending_all if p.get("type") == "protocol"]
+        preferences = [{"category": p["category"], "topic": p["header"], "rules": p["rules"] if "rules" in p else p["content"].split("\n")} for p in pending_all if p.get("type") != "protocol"]
         update_wiki(doctor_id, protocols, preferences)
-        for idx in range(len(pending_all) - 1, -1, -1):
-            remove_pending_update(doctor_id, idx)
+        for idx in range(len(pending_all) - 1, -1, -1): remove_pending_update(doctor_id, idx)
         st.session_state["episode_wiki_saved"] = True
-
-    # Compact 2-column chip grid
-    chips_html = ""
-    for item in pending_all:
-        badge_cls = "protocol" if item.get("type") == "protocol" else "preference"
-        badge_label = "Protocol" if badge_cls == "protocol" else "Preference"
-        chips_html += f"""
-<div class="insight-row">
-  <span class="insight-badge {badge_cls}">{badge_label}</span>
-  <div>
-    <div class="insight-header">{item.get('header', '')}</div>
-    <div class="insight-category">{item.get('category', '')}</div>
-  </div>
-</div>"""
-
-    st.markdown(f"""
-<div class="insights-card">
-  <div class="insights-title">✦ Wiki updated from {patient_name}'s episode</div>
-  <div class="insights-sub">{len(pending_all)} insight(s) added to your profile automatically.</div>
-  <div class="insights-grid">{chips_html}</div>
-</div>""", unsafe_allow_html=True)
-
+    chips_html = "".join([f'<div class="insight-row"><span class="insight-badge {"protocol" if item.get("type")=="protocol" else "preference"}">{"Protocol" if item.get("type")=="protocol" else "Preference"}</span><div><div class="insight-header">{item.get("header", "")}</div><div class="insight-category">{item.get("category", "")}</div></div></div>' for item in pending_all])
+    st.markdown(f'<div class="insights-card"><div class="insights-title">✦ Wiki updated from {patient_name}\'s episode</div><div class="insights-sub">{len(pending_all)} insight(s) added automatically.</div><div class="insights-grid">{chips_html}</div></div>', unsafe_allow_html=True)
 
 def render_discharge_results(outputs: dict, pending_all: list, patient_name: str = ""):
-    if "discharge_summary" in outputs:
-        st.markdown("### Discharge Summary")
-        st.caption("Edit and copy into Epic")
-        st.text_area("", value=outputs["discharge_summary"], height=300,
-                     key="dc_summary_ta", label_visibility="collapsed")
-        st.divider()
-
-    if "patient_instructions" in outputs:
-        st.markdown("### Patient Instructions")
-        st.caption("Print or send to patient portal")
-        st.text_area("", value=outputs["patient_instructions"], height=250,
-                     key="dc_instructions_ta", label_visibility="collapsed")
-        st.divider()
-
-    if "discharge_checklist" in outputs:
-        st.markdown("### Sign-off Checklist")
-        st.markdown(outputs["discharge_checklist"])
-        st.divider()
-
+    if "discharge_summary" in outputs: st.markdown("### Discharge Summary"); st.text_area("", value=outputs["discharge_summary"], height=300, key="dc_summary_ta", label_visibility="collapsed"); st.divider()
+    if "patient_instructions" in outputs: st.markdown("### Patient Instructions"); st.text_area("", value=outputs["patient_instructions"], height=250, key="dc_instructions_ta", label_visibility="collapsed"); st.divider()
+    if "discharge_checklist" in outputs: st.markdown("### Sign-off Checklist"); st.markdown(outputs["discharge_checklist"]); st.divider()
     if "safety_check" in outputs:
-        with st.expander("Safety Check", expanded=False):
-            st.markdown(outputs["safety_check"])
-
-    if pending_all:
-        st.divider()
-        _render_episode_learnings(pending_all, patient_name or "this patient")
-
-
-def render_case_mgmt_results(outputs: dict, pending_all: list):
-    if "case_management_plan" in outputs:
-        st.markdown("### Case Management Plan")
-        st.markdown(outputs["case_management_plan"])
-        st.divider()
-
-    if "safety_check" in outputs:
-        with st.expander("Safety Check", expanded=False):
-            st.markdown(outputs["safety_check"])
-
-    if pending_all:
-        with st.expander(f"Wiki Insights ({len(pending_all)} pending)", expanded=False):
-            for i, item in enumerate(pending_all):
-                render_pending_update_card(i, item, "default", suffix="cm")
-
+        with st.expander("Safety Check", expanded=False): st.markdown(outputs["safety_check"])
+    if pending_all: st.divider(); _render_episode_learnings(pending_all, patient_name or "this patient")
 
 # ---------------------------------------------------------------------------
 # Main Execution
 # ---------------------------------------------------------------------------
 
-# Layout logic: ONLY open columns when a citation is active (Default Closed)
 if app_mode == "Patient Workflows" and st.session_state.get("active_citation"):
     col_main, col_right = st.columns([3, 1])
 else:
-    col_main = st.container()
-    col_right = None
+    col_main, col_right = st.container(), None
 
 with col_main:
-    if app_mode == "Patient Workflows":
-        render_patient_workflows()
-    else:
-        render_wiki_management()
+    if app_mode == "Patient Workflows": render_patient_workflows()
+    else: render_wiki_management()
 
 if col_right:
-    with col_right:
-        # The content in this column is sticky due to Global CSS injected at top
-        render_wiki_reference_card("default")
+    with col_right: render_wiki_reference_card("default")
