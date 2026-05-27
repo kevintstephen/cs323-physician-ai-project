@@ -6,6 +6,7 @@ from agents.admission.note_drafter import NoteDrafterAgent
 from agents.admission.action_extraction import ActionExtractionAgent
 from agents.admission.prescription import PrescriptionDraftAgent
 from agents.safety import SafetyAgent
+from agents.drift_agent import DriftAgent
 from workflows.engine import WorkflowStep
 
 # ---------------------------------------------------------------------------
@@ -13,7 +14,7 @@ from workflows.engine import WorkflowStep
 #
 # Group 1 (parallel): chart_review, lab_interpretation, ed_note_synthesis
 # Sequential:         consultant_routing → note_draft
-# Group 2 (parallel): safety_check, action_extraction, prescription_draft
+# Group 2 (parallel): safety_check, action_extraction, prescription_draft, wiki_drift_check
 #   All three depend only on note_draft + group 1 outputs, not each other.
 #   prescription_draft uses generate_with_tools (live FDA + PA lookups) so
 #   it typically runs longest, but parallel execution means it sets the
@@ -49,6 +50,12 @@ ADMISSION_STEPS: list[WorkflowStep] = [
     WorkflowStep(
         name="safety_check",
         agent_class=SafetyAgent,
+        context_keys=["note_draft"],
+        parallel_group=2,
+    ),
+    WorkflowStep(
+        name="wiki_drift_check",
+        agent_class=DriftAgent,
         context_keys=["note_draft"],
         parallel_group=2,
     ),

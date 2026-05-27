@@ -1,1 +1,202 @@
-[]
+[
+  {
+    "type": "protocol",
+    "category": "Labs/Blood Work",
+    "header": "BMP monitoring post-GDMT",
+    "rules": [
+      {
+        "text": "Check BMP at 1 week post-initiation of ARNI or MRA in HFrEF patients.",
+        "attributes": {
+          "Rationale": "High risk of hyperkalemia and AKI in patients with baseline CKD [WikiID: 2f6961].",
+          "Evidence": "2022 AHA/ACC/HFSA Guideline [WikiID: 2f6961]"
+        }
+      }
+    ]
+  },
+  {
+    "type": "protocol",
+    "category": "Diseases/Issues",
+    "header": "Sepsis fluid resuscitation",
+    "rules": [
+      {
+        "text": "Limit initial fluid bolus to 20mL/kg in patients with concomitant HF or ESRD.",
+        "attributes": {
+          "Rationale": "Standard 30mL/kg bolus carries a high risk of volume overload in susceptible populations [WikiID: d41bc0].",
+          "Evidence": "Surviving Sepsis Campaign 2021 [WikiID: d41bc0]"
+        }
+      }
+    ]
+  },
+  {
+    "type": "protocol",
+    "category": "Cardiology",
+    "header": "Atrial Fibrillation",
+    "rules": [
+      {
+        "text": "For symptomatic AFib in patients >80 years old, defer rhythm control preference to cardiology or accept rate control as an alternative.",
+        "attributes": {
+          "Rationale": "Early rhythm control is preferred generally, but clinical nuance is required for the elderly to balance symptom control vs. procedure risk [WikiID: c94385].",
+          "Evidence": "2023 ACC/AHA AFib Guideline [WikiID: c94385]"
+        }
+      }
+    ]
+  },
+  {
+    "type": "protocol",
+    "category": "Diseases/Issues",
+    "header": "Heart failure exacerbation - anemia workup",
+    "rules": [
+      {
+        "text": "In patients with HFrEF and anemia (Hgb < 12 g/dL), routinely order iron studies (ferritin, TSAT) and TSH as part of the precipitant/comorbidity workup.",
+        "attributes": {
+          "Rationale": "Anemia and thyroid dysfunction may contribute to symptoms or exacerbate HFrEF; evaluating these factors aids in comprehensive management and identifying potential triggers for recurrent admissions.",
+          "Evidence": "General clinical practice for recurrent HF decompensation [WikiID: b9f1b7, WikiID: 6bddc0]."
+        }
+      }
+    ]
+  },
+  {
+    "type": "protocol",
+    "category": "Medications",
+    "header": "Sulfa allergy - diuretic transition",
+    "rules": [
+      {
+        "text": "For patients with a documented severe sulfa allergy (hives/anaphylaxis), perform a documented safety check for potential cross-reactivity with sulfonamide-derivative diuretics (e.g., Furosemide) before administration.",
+        "attributes": {
+          "Rationale": "Standardization of safety screening to prevent potential allergic reactions.",
+          "Interpretation": "If cross-reactivity is suspected, evaluate for alternative non-sulfonamide loop diuretics like ethacrynic acid [WikiID: 410372]."
+        }
+      }
+    ]
+  },
+  {
+    "type": "preference",
+    "category": "Documentation",
+    "header": "Clinical Documentation Standards",
+    "rules": [
+      {
+        "text": "In the Assessment & Plan, specify explicit thresholds for downstream actions (e.g., 'start spironolactone when Cr stable and K <5.0') rather than using vague, deferred language.",
+        "attributes": {
+          "Rationale": "Reduces clinical ambiguity and ensures clear, actionable plan-of-care for the multidisciplinary team [WikiID: cfacb2]."
+        }
+      }
+    ]
+  },
+  {
+    "type": "protocol",
+    "category": "Diseases/Issues",
+    "header": "Heart failure exacerbation - target dry weight setting",
+    "rules": [
+      {
+        "text": "When dry-weight creep is observed across admissions, set the new target dry weight below the most recent discharge weight (e.g., 3-4 kg below) rather than anchoring to the last documented dry weight.",
+        "attributes": {
+          "Rationale": "Anchoring to a creeping dry weight perpetuates inadequate decongestion; using a lower target accounts for likely under-diuresis on prior admissions."
+        }
+      }
+    ]
+  },
+  {
+    "type": "protocol",
+    "category": "Medications",
+    "header": "Medication adherence verification",
+    "rules": [
+      {
+        "text": "For recurrent admissions where patient reports strict adherence, verify true adherence with pill counts and pharmacy refill history rather than relying on self-report alone.",
+        "attributes": {
+          "Rationale": "Self-reported adherence is unreliable in recurrent decompensations; objective verification is needed before attributing precipitant to non-adherence vs. other causes."
+        }
+      }
+    ]
+  },
+  {
+    "type": "protocol",
+    "category": "Medications",
+    "header": "Beta-blockers in diabetics",
+    "rules": [
+      {
+        "text": "When carvedilol or other beta-blockers are continued in T2DM patients on sliding-scale insulin, instruct nursing to monitor glucose objectively (fingersticks QID) rather than relying on adrenergic hypoglycemia symptoms.",
+        "attributes": {
+          "Rationale": "Beta-blockers mask adrenergic symptoms of hypoglycemia, increasing risk of unrecognized hypoglycemic events."
+        }
+      }
+    ]
+  },
+  {
+    "type": "protocol",
+    "category": "Medications",
+    "header": "ARNI transition from ACEi",
+    "rules": [
+      {
+        "text": "If switching from ACEi to ARNI per cardiology recommendation, require a 36-hour washout period and initiate Part D prior authorization workflow at least 48h before anticipated discharge.",
+        "attributes": {
+          "Rationale": "Concomitant ACEi/ARNI use causes angioedema risk; ARNI also has high PA likelihood under Medicare Part D and is a common cause of discharge delay."
+        }
+      }
+    ]
+  },
+  {
+    "type": "protocol",
+    "category": "Diseases/Issues",
+    "header": "Loop diuretic safety in sulfa allergy",
+    "rules": [
+      {
+        "text": "When a patient with documented sulfa allergy has already received furosemide in the ED without a cross-reactivity check, do not defer the safety check \u2014 verify with pharmacy/attending BEFORE the next scheduled dose, and switch to ethacrynic acid if true reaction history.",
+        "attributes": {
+          "Rationale": "Continuing furosemide pending later review exposes the patient to repeated allergen doses; cross-reactivity must be resolved pre-dose, not flagged for later."
+        }
+      }
+    ]
+  },
+  {
+    "type": "preference",
+    "category": "Documentation",
+    "header": "Draft completeness check",
+    "rules": [
+      {
+        "text": "Before sign-off, check that note drafts are not truncated mid-sentence or contain unclosed brackets/sections; flag incomplete drafts explicitly in safety review.",
+        "attributes": {
+          "Rationale": "Truncated notes may omit safety-critical content (e.g., allergy lists, plan items) and pose medico-legal and clinical risk."
+        }
+      }
+    ]
+  },
+  {
+    "type": "preference",
+    "category": "Documentation",
+    "header": "Medication list annotations",
+    "rules": [
+      {
+        "text": "Each home medication in the admission note should be annotated inline with explicit continue/hold/dose-adjust decision AND the specific numerical hold threshold parameters (e.g., 'Hold if SBP <100, Cr >2.0, or K+ >5.0').",
+        "attributes": {
+          "Rationale": "Explicit numerical thresholds prevent ambiguity for covering clinicians and nursing staff regarding when to hold the next dose."
+        }
+      }
+    ]
+  },
+  {
+    "type": "preference",
+    "category": "Documentation",
+    "header": "Prescription agent_notes content",
+    "rules": [
+      {
+        "text": "Prescription agent_notes should include: dose rationale (e.g., 2x home PO for IV loop), explicit hold/escalation triggers with numerical thresholds, discharge transition plan (when to resume home regimen), and PA workflow timing for high-risk agents.",
+        "attributes": {
+          "Rationale": "Consolidating dose logic, safety thresholds, and discharge planning per-medication reduces handoff errors and discharge delays."
+        }
+      }
+    ]
+  },
+  {
+    "type": "preference",
+    "category": "Workflow",
+    "header": "Wiki drift audit integrity",
+    "rules": [
+      {
+        "text": "When wiki drift audits encounter conflicting signals (e.g., 'no wiki loaded' but wiki content visible in context), explicitly flag the discrepancy and request physician confirmation rather than proceeding with a PASS verdict.",
+        "attributes": {
+          "Rationale": "Defaulting to PASS on ambiguous source state risks missing actual drift; physician must confirm authoritative wiki version."
+        }
+      }
+    ]
+  }
+]

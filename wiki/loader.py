@@ -8,14 +8,17 @@ from pathlib import Path
 WIKI_DIR = Path(__file__).parent
 
 
-def generate_id(category: str, topic: str, rule: str) -> str:
+def generate_id(category: str, topic: str, rule_text: str) -> str:
     """Generates a stable, deterministic ID for a wiki rule."""
-    text = f"{category}:{topic}:{rule}".strip().lower()
+    text = f"{category}:{topic}:{rule_text}".strip().lower()
     return hashlib.md5(text.encode()).hexdigest()[:6]
 
 
 def parse_wiki_sections(content: str) -> list[dict]:
-    """Parses markdown into a list of {category, topic, rules}."""
+    """
+    Parses markdown into a list of {category, topic, rules}.
+    Rules are returned as dicts: {"text": str, "attributes": dict}.
+    """
     sections = []
     current_cat = "General"
     
@@ -33,10 +36,26 @@ def parse_wiki_sections(content: str) -> list[dict]:
             while i < len(lines) and not lines[i].startswith("#"):
                 clean_line = lines[i].strip()
                 if clean_line.startswith("- "):
-                    rules.append(clean_line[2:])
-                elif clean_line:
-                    rules.append(clean_line)
-                i += 1
+                    # Main rule text
+                    rule_text = clean_line[2:].strip()
+                    # Strip existing ID if present to get core rule text
+                    clean_rule_text = re.sub(r"^\[ID:\s*[^\]]+\]\s*", "", rule_text)
+                    
+                    rule_obj = {"text": clean_rule_text, "attributes": {}}
+                    
+                    # Look for sub-bullets (nested attributes)
+                    j = i + 1
+                    while j < len(lines) and lines[j].startswith("  - "):
+                        sub_line = lines[j].strip()[2:].strip() # Remove "- "
+                        if ":" in sub_line:
+                            key, val = sub_line.split(":", 1)
+                            rule_obj["attributes"][key.strip()] = val.strip()
+                        j += 1
+                    
+                    rules.append(rule_obj)
+                    i = j
+                else:
+                    i += 1
             sections.append({
                 "category": current_cat,
                 "topic": topic,
@@ -68,8 +87,10 @@ def load_wiki(doctor_id: str = "default") -> str:
         for s in sections:
             rules_with_ids = []
             for r in s['rules']:
-                rule_id = generate_id(s['category'], s['topic'], r)
-                rules_with_ids.append(f"- [ID: {rule_id}] {r}")
+                rule_id = generate_id(s['category'], s['topic'], r['text'])
+                rules_with_ids.append(f"- [ID: {rule_id}] {r['text']}")
+                for key, val in r['attributes'].items():
+                    rules_with_ids.append(f"  - {key}: {val}")
             
             section_text = f"## {s['category']}\n### {s['topic']}\n" + "\n".join(rules_with_ids)
             formatted_sections.append(section_text)
@@ -91,11 +112,12 @@ def get_wiki_insight(doctor_id: str, insight_id: str) -> dict:
         sections = parse_wiki_sections(content)
         for s in sections:
             for r in s['rules']:
-                if generate_id(s['category'], s['topic'], r).lower() == insight_id:
+                if generate_id(s['category'], s['topic'], r['text']).lower() == insight_id:
                     return {
                         "category": s['category'],
                         "topic": s['topic'],
-                        "rule": r
+                        "rule": r['text'],
+                        "attributes": r['attributes']
                     }
     return {}
 
@@ -145,7 +167,14 @@ def append_to_markdown(file_path: Path, new_data: list[dict]):
                 topic_index = i
                 break
         
-        formatted_rules = [f"- {r}" for r in rules]
+        formatted_rules = []
+        for r in rules:
+            if isinstance(r, dict):
+                formatted_rules.append(f"- {r['text']}")
+                for key, val in r.get('attributes', {}).items():
+                    formatted_rules.append(f"  - {key}: {val}")
+            else:
+                formatted_rules.append(f"- {r}")
 
         if topic_index != -1:
             # Topic exists, append rules to it
@@ -154,7 +183,23 @@ def append_to_markdown(file_path: Path, new_data: list[dict]):
                 insert_pos += 1
             
             existing_text = "\n".join(lines).lower()
-            to_insert = [r for r in formatted_rules if r.lower() not in existing_text]
+            to_insert = []
+            # Only insert the main rule if it doesn't exist. 
+            # This is a bit simplistic for nested attributes, but let's start here.
+            current_rule_lines = []
+            for r_line in formatted_rules:
+                if r_line.startswith("- "):
+                    if current_rule_lines:
+                        # Check if existing_text contains the main rule
+                        if current_rule_lines[0].lower() not in existing_text:
+                            to_insert.extend(current_rule_lines)
+                    current_rule_lines = [r_line]
+                else:
+                    current_rule_lines.append(r_line)
+            
+            if current_rule_lines and current_rule_lines[0].lower() not in existing_text:
+                to_insert.extend(current_rule_lines)
+
             if to_insert:
                 lines[insert_pos:insert_pos] = to_insert
         else:
@@ -197,7 +242,21 @@ def get_pending_updates(doctor_id: str) -> list[dict]:
     if not path.exists():
         return []
     try:
-        return json.loads(path.read_text())
+        data = json.loads(path.read_text())
+        
+        # Format rules to content if missing (legacy support for app.py)
+        for item in data:
+            if "content" not in item and "rules" in item:
+                lines = []
+                for r in item["rules"]:
+                    if isinstance(r, dict):
+                        lines.append(f"- {r.get('text', '')}")
+                        for k, v in r.get('attributes', {}).items():
+                            lines.append(f"  - {k}: {v}")
+                    else:
+                        lines.append(f"- {r}")
+                item["content"] = "\n".join(lines)
+        return data
     except json.JSONDecodeError:
         return []
 
@@ -206,21 +265,36 @@ def add_pending_updates(doctor_id: str, updates: dict):
     """Adds new updates to the staging queue."""
     pending = get_pending_updates(doctor_id)
     
+    def format_rules_to_content(rules: list) -> str:
+        lines = []
+        for r in rules:
+            if isinstance(r, dict):
+                lines.append(f"- {r.get('text', '')}")
+                for k, v in r.get('attributes', {}).items():
+                    lines.append(f"  - {k}: {v}")
+            else:
+                lines.append(f"- {r}")
+        return "\n".join(lines)
+
     # Handle new list-based format from WikiSubstrateAgent
     for item in updates.get("new_protocols", []):
+        rules = item.get("rules", [])
         pending.append({
             "type": "protocol",
             "category": item.get("category", "General"),
             "header": item.get("topic", "Miscellaneous"),
-            "content": "\n".join(item.get("rules", []))
+            "content": format_rules_to_content(rules),
+            "rules": rules
         })
             
     for item in updates.get("new_preferences", []):
+        rules = item.get("rules", [])
         pending.append({
             "type": "preference",
             "category": item.get("category", "General"),
             "header": item.get("topic", "Miscellaneous"),
-            "content": "\n".join(item.get("rules", []))
+            "content": format_rules_to_content(rules),
+            "rules": rules
         })
 
     path = WIKI_DIR / doctor_id / "pending_updates.json"

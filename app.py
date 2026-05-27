@@ -426,7 +426,7 @@ def get_related_updates(text: str, pending_list: list[dict]) -> list[int]:
     keywords = set(re.findall(r'\w{4,}', text.lower()))
     related_indices = []
     for i, item in enumerate(pending_list):
-        content_words = set(re.findall(r'\w{4,}', (item['content'] + " " + item['header']).lower()))
+        content_words = set(re.findall(r'\w{4,}', (item.get('content', '') + " " + item['header']).lower()))
         if keywords & content_words:
             related_indices.append(i)
     return related_indices
@@ -549,25 +549,43 @@ with st.sidebar:
 
 def render_pending_update_card(i: int, item: dict, doctor_id: str, suffix: str = "", expanded: bool = False):
     """Renders a single pending update card with Edit/Approve/Reject actions."""
-    label = f"✨ [{item.get('category', 'General')}] {item['header']}"
+    label = f"✨ [{item.get('category', 'General')}] {item.get('header', 'Miscellaneous')}"
     with st.expander(label, expanded=expanded):
         new_category = item.get('category', 'General')
-        new_topic = item['header']
-        new_content = st.text_area("", value=item['content'], key=f"edit_{suffix}_{i}", label_visibility="collapsed")
+        new_topic = item.get('header', 'Miscellaneous')
+        # Resilience: fallback to rules-based content if key missing
+        default_content = item.get('content', '')
+        if not default_content and "rules" in item:
+            lines = []
+            for r in item["rules"]:
+                if isinstance(r, dict):
+                    lines.append(f"- {r.get('text', '')}")
+                    for k, v in r.get('attributes', {}).items():
+                        lines.append(f"  - {k}: {v}")
+                else:
+                    lines.append(f"- {r}")
+            default_content = "\n".join(lines)
+            
+        new_content = st.text_area("", value=default_content, key=f"edit_{suffix}_{i}", label_visibility="collapsed")
         
         col1, col2, col3 = st.columns([1, 1, 4])
         if col1.button("✅ Approve", key=f"app_{suffix}_{i}", type="primary"):
-            rules = [line.strip("- ").strip() for line in new_content.split("\n") if line.strip()]
-            update_data = [{"category": new_category, "topic": new_topic, "rules": rules}]
+            # Use parse_wiki_sections to handle potentially edited markdown content
+            dummy_content = f"## {new_category}\n### {new_topic}\n{new_content}"
+            parsed_sections = parse_wiki_sections(dummy_content)
             
-            if item['type'] == 'protocol':
-                update_wiki(doctor_id, update_data, [])
-            else:
-                update_wiki(doctor_id, [], update_data)
-            
-            remove_pending_update(doctor_id, i)
-            st.success("Wiki evolved.")
-            st.rerun()
+            if parsed_sections:
+                rules = parsed_sections[0]['rules']
+                update_data = [{"category": new_category, "topic": new_topic, "rules": rules}]
+                
+                if item.get('type') == 'protocol':
+                    update_wiki(doctor_id, update_data, [])
+                else:
+                    update_wiki(doctor_id, [], update_data)
+                
+                remove_pending_update(doctor_id, i)
+                st.success("Wiki evolved.")
+                st.rerun()
         
         if col2.button("❌ Reject", key=f"rej_{suffix}_{i}"):
             remove_pending_update(doctor_id, i)
@@ -610,7 +628,7 @@ def render_wiki_management():
         filtered = [
             s for s in sections 
             if (filter_cat == "All" or s['category'] == filter_cat) and
-               (search_query in s['category'].lower() or search_query in s['topic'].lower() or any(search_query in r.lower() for r in s['rules']))
+               (search_query in s['category'].lower() or search_query in s['topic'].lower() or any(search_query in (r['text'] if isinstance(r, dict) else r).lower() for r in s['rules']))
         ]
         
         if not filtered:
@@ -625,31 +643,55 @@ def render_wiki_management():
             with st.expander(f"{s['topic']}", expanded=False):
                 new_cat = s['category']
                 new_topic = s['topic']
-                body_text = "\n".join(f"- {r}" for r in s['rules'])
+                
+                # Format structured rules into markdown for the text area
+                rule_lines = []
+                for r in s['rules']:
+                    if isinstance(r, dict):
+                        rule_lines.append(f"- {r['text']}")
+                        for k, v in r.get('attributes', {}).items():
+                            rule_lines.append(f"  - {k}: {v}")
+                    else:
+                        rule_lines.append(f"- {r}")
+                body_text = "\n".join(rule_lines)
+                
                 new_body = st.text_area("", value=body_text, height=200, key=f"body_ed_{filename}_{i}", label_visibility="collapsed")
                 
                 c1, c2, _ = st.columns([1, 1, 4])
                 if c1.button("💾 Save", key=f"s_{filename}_{i}"):
-                    new_sections = []
-                    rules = [line.strip("- ").strip() for line in new_body.split("\n") if line.strip()]
-                    for orig in sections:
-                        if orig['topic'] == s['topic'] and orig['category'] == s['category']:
-                            new_sections.append({"category": new_cat, "topic": new_topic, "rules": rules})
-                        else:
-                            new_sections.append(orig)
+                    # Use parse_wiki_sections to parse the potentially nested markdown edits
+                    dummy_content = f"## {new_cat}\n### {new_topic}\n{new_body}"
+                    parsed_new = parse_wiki_sections(dummy_content)
                     
-                    new_sections.sort(key=lambda x: x['category'])
-                    reconstructed = ""
-                    last_cat = None
-                    for ns in new_sections:
-                        if ns['category'] != last_cat:
-                            reconstructed += f"\n## {ns['category']}\n"
-                            last_cat = ns['category']
-                        reconstructed += f"### {ns['topic']}\n" + "\n".join(f"- {r}" for r in ns['rules']) + "\n\n"
-                    
-                    save_wiki_file_content(doctor_id, filename, reconstructed)
-                    st.success("Wiki updated.")
-                    st.rerun()
+                    if parsed_new:
+                        new_rules = parsed_new[0]['rules']
+                        new_sections = []
+                        for orig in sections:
+                            if orig['topic'] == s['topic'] and orig['category'] == s['category']:
+                                new_sections.append({"category": new_cat, "topic": new_topic, "rules": new_rules})
+                            else:
+                                new_sections.append(orig)
+                        
+                        new_sections.sort(key=lambda x: x['category'])
+                        reconstructed = ""
+                        last_cat = None
+                        for ns in new_sections:
+                            if ns['category'] != last_cat:
+                                reconstructed += f"\n## {ns['category']}\n"
+                                last_cat = ns['category']
+                            reconstructed += f"### {ns['topic']}\n"
+                            for r in ns['rules']:
+                                if isinstance(r, dict):
+                                    reconstructed += f"- {r['text']}\n"
+                                    for k, v in r.get('attributes', {}).items():
+                                        reconstructed += f"  - {k}: {v}\n"
+                                else:
+                                    reconstructed += f"- {r}\n"
+                            reconstructed += "\n"
+                        
+                        save_wiki_file_content(doctor_id, filename, reconstructed)
+                        st.success("Wiki updated.")
+                        st.rerun()
                 
                 if c2.button("🗑 Delete", key=f"d_{filename}_{i}"):
                     new_sections = [orig for orig in sections if not (orig['topic'] == s['topic'] and orig['category'] == s['category'])]
@@ -661,7 +703,15 @@ def render_wiki_management():
                         if ns['category'] != last_cat:
                             reconstructed += f"\n## {ns['category']}\n"
                             last_cat = ns['category']
-                        reconstructed += f"### {ns['topic']}\n" + "\n".join(f"- {r}" for r in ns['rules']) + "\n\n"
+                        reconstructed += f"### {ns['topic']}\n"
+                        for r in ns['rules']:
+                            if isinstance(r, dict):
+                                reconstructed += f"- {r['text']}\n"
+                                for k, v in r.get('attributes', {}).items():
+                                    reconstructed += f"  - {k}: {v}\n"
+                            else:
+                                reconstructed += f"- {r}\n"
+                        reconstructed += "\n"
                     save_wiki_file_content(doctor_id, filename, reconstructed)
                     st.rerun()
 
@@ -1022,8 +1072,8 @@ def render_checkin_inline(patient_id: str, patient_data: dict, llm_provider: str
   <div class="action-card-{'done' if ci_labs_done else 'sub'}">{labs_sub}</div>
 </div>""", unsafe_allow_html=True)
         st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
-        if st.button("Review & Send →" if not ci_labs_done else "Review Again", key="ci_open_labs",
-                     type="primary" if not ci_labs_done else "secondary", use_container_width=True,
+        if st.button("Review & Send →" if not labs_done else "Review Again", key="ci_open_labs",
+                     type="primary" if not labs_done else "secondary", use_container_width=True,
                      disabled=not lab_actions):
             st.session_state["show_ci_labs"] = True
 
@@ -1299,11 +1349,11 @@ def _render_episode_learnings(pending_all: list, patient_name: str, doctor_id: s
     # Auto-save once per discharge render (guard with session state)
     if not st.session_state.get("episode_wiki_saved"):
         protocols = [
-            {"category": p["category"], "topic": p["header"], "rules": p["content"].split("\n")}
+            {"category": p["category"], "topic": p["header"], "rules": p["rules"] if "rules" in p else p["content"].split("\n")}
             for p in pending_all if p.get("type") == "protocol"
         ]
         preferences = [
-            {"category": p["category"], "topic": p["header"], "rules": p["content"].split("\n")}
+            {"category": p["category"], "topic": p["header"], "rules": p["rules"] if "rules" in p else p["content"].split("\n")}
             for p in pending_all if p.get("type") != "protocol"
         ]
         update_wiki(doctor_id, protocols, preferences)

@@ -26,12 +26,14 @@ class WikiSubstrateAgent(BaseAgent):
     def system_prompt(self) -> str:
         return """You are a clinical knowledge engineer. Your job is to analyze a completed patient workflow and identify new clinical protocols or physician preferences that should be added to the Doctor's Wiki.
 
-The Wiki is organized by categories (e.g., "Diseases/Issues", "Labs/Blood Work", "Communication Style").
+The Wiki captures a physician's "cognitive workflow" — not just what they did, but why they did it, what evidence they relied on, and what questions they asked.
 
 Compare the current workflow (especially the physician's final notes and decisions) against the existing Wiki. Look for:
 - Specific thresholds used (e.g., "Always check BMP if Cr > 2.0").
 - Repeating patterns in management.
-- Formatting or communication styles used consistently.
+- Diagnostic questions asked to reach a conclusion.
+- Rationale behind specific choices (especially if they deviate from standard protocols).
+- Evidence or guidelines cited.
 
 Output ONLY valid JSON with this exact structure:
 
@@ -40,14 +42,31 @@ Output ONLY valid JSON with this exact structure:
     {
       "category": "Diseases/Issues",
       "topic": "Condition Name",
-      "rules": ["Rule 1", "Rule 2"]
+      "rules": [
+        {
+          "text": "The core rule or protocol step",
+          "attributes": {
+            "Rationale": "Why the doctor does this",
+            "Evidence": "Specific study or guideline if mentioned",
+            "Interpretation": "How the doctor interprets the evidence",
+            "Diagnostic Questions": "Key questions asked"
+          }
+        }
+      ]
     }
   ],
   "new_preferences": [
     {
       "category": "Communication Style",
       "topic": "Category Name",
-      "rules": ["Preference 1", "Preference 2"]
+      "rules": [
+        {
+          "text": "The core preference",
+          "attributes": {
+             "Rationale": "Why this preference exists"
+          }
+        }
+      ]
     }
   ]
 }
@@ -57,7 +76,8 @@ Rules:
 - Categorize logically (e.g., Sepsis/Diabetes -> "Diseases/Issues", Sodium/Creatinine -> "Labs/Blood Work").
 - Be specific and actionable.
 - If no new information is found, return empty lists for both keys.
-- Do not include patient-specific data; extract the general rule behind the decision."""
+- Do not include patient-specific data; extract the general rule behind the decision.
+- Attributes are optional; only include them if they can be inferred from the workflow."""
 
     def format_prompt(self, context: dict) -> str:
         outputs_text = "\n\n".join(

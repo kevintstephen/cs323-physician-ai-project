@@ -133,10 +133,14 @@ class TestWorkflowEngine:
             "consultant_routing",
             "note_draft",
             "safety_check",
+            "wiki_drift_check",
+            "action_extraction",
+            "prescription_draft",
         ]
 
-    def test_safety_check_is_last(self):
-        assert ADMISSION_STEPS[-1].name == "safety_check"
+    def test_safety_check_is_in_parallel_group_2(self):
+        safety_step = next(s for s in ADMISSION_STEPS if s.name == "safety_check")
+        assert safety_step.parallel_group == 2
 
 
 # ---------------------------------------------------------------------------
