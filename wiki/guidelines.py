@@ -127,6 +127,40 @@ def save_guideline(category: str, topic: str, text: str, attributes: dict, docto
     save_wiki_file_content(doctor_id, "guidelines.md", new_content)
 
 
+def delete_guideline(category: str, topic: str, text: str, doctor_id: str = "default"):
+    """
+    Removes a single guideline (matched by category, topic, and ID-stripped text)
+    from guidelines.md and rewrites the file.
+    """
+    content = get_wiki_file_content(doctor_id, "guidelines.md")
+    sections = parse_wiki_sections(content)
+
+    text_clean = re.sub(r"^\[ID:\s*[^\]]+\]\s*", "", text).lower().strip()
+    for s in sections:
+        if s['category'].lower() == category.lower() and s['topic'].lower() == topic.lower():
+            s['rules'] = [
+                r for r in s['rules']
+                if re.sub(r"^\[ID:\s*[^\]]+\]\s*", "", r['text']).lower().strip() != text_clean
+            ]
+
+    # Drop now-empty topics, then reconstruct markdown.
+    sections = [s for s in sections if s['rules']]
+    new_content = "# Clinical Guidelines\n\n"
+    current_cat = ""
+    for s in sections:
+        if s['category'] != current_cat:
+            new_content += f"## {s['category']}\n"
+            current_cat = s['category']
+        new_content += f"### {s['topic']}\n"
+        for r in s['rules']:
+            new_content += f"- {r['text']}\n"
+            for k, v in r['attributes'].items():
+                new_content += f"  - {k}: {v}\n"
+        new_content += "\n"
+
+    save_wiki_file_content(doctor_id, "guidelines.md", new_content)
+
+
 def search_pubmed(query: str) -> list[dict]:
     """Wraps PubMedClient for the API."""
     client = PubMedClient()

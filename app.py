@@ -18,11 +18,11 @@ from dotenv import load_dotenv
 
 from tools.epic import EpicClient
 from wiki.loader import (
-    load_wiki, get_pending_updates, remove_pending_update, 
+    load_wiki, get_pending_updates, remove_pending_update,
     update_wiki, get_wiki_file_content, save_wiki_file_content,
-    get_wiki_insight, parse_wiki_sections
+    get_wiki_insight, parse_wiki_sections, generate_id
 )
-from wiki.guidelines import search_pubmed, save_guideline, search_guidelines
+from wiki.guidelines import search_pubmed, save_guideline, search_guidelines, delete_guideline
 from llm import AnthropicBackend, GeminiBackend
 from workflows.engine import WorkflowEngine
 from workflows.admission import ADMISSION_STEPS
@@ -500,6 +500,93 @@ with st.sidebar:
 # Wiki Management View
 # ---------------------------------------------------------------------------
 
+DECISION_OPTIONS = ["Adopted", "Deferred", "Under review"]
+
+
+def _render_decision_badge(decision: str):
+    """Renders a colored badge reflecting the physician's adopt/defer decision."""
+    d = (decision or "").strip().lower()
+    if d == "adopted":
+        st.success("✅ Adopted")
+    elif d == "deferred":
+        st.warning("⏸️ Deferred")
+    else:
+        st.info("🔎 Under review")
+
+
+def render_guidelines_repository(doctor_id: str, search_query: str, col_filter):
+    """
+    Repository view of saved clinical guidelines & literature (guidelines.md).
+    Shows each entry as a card with the physician's adopt/defer decision,
+    interpretation notes, and rationale, all editable inline.
+    """
+    st.subheader("📚 My Clinical Guidelines & Literature")
+    content = get_wiki_file_content(doctor_id, "guidelines.md")
+    sections = parse_wiki_sections(content)
+    if not sections:
+        st.caption("No saved guidelines yet. Search PubMed or add an external source below to start your evidence library.")
+        return
+
+    categories = sorted(set(s['category'] for s in sections))
+    filter_cat = col_filter.selectbox("Filter Guidelines", ["All"] + categories, key="filter_guidelines")
+
+    def matches(s, r):
+        if filter_cat != "All" and s['category'] != filter_cat:
+            return False
+        if not search_query:
+            return True
+        haystack = (s['category'] + " " + s['topic'] + " " + r['text'] + " " + " ".join(r['attributes'].values())).lower()
+        return search_query in haystack
+
+    current_cat = None
+    shown = 0
+    for s in sections:
+        for r in s['rules']:
+            if not matches(s, r):
+                continue
+            if s['category'] != current_cat:
+                st.markdown(f"#### 📁 {s['category']}")
+                current_cat = s['category']
+            shown += 1
+            attrs = r['attributes']
+            rule_id = generate_id(s['category'], s['topic'], r['text'])
+            with st.container(border=True):
+                st.markdown(f"**{s['topic']}** — {r['text']}")
+                _render_decision_badge(attrs.get("Decision"))
+                if attrs.get("Key Recommendation"):
+                    st.markdown(f"**Key Recommendation:** {attrs['Key Recommendation']}")
+                if attrs.get("Source"):
+                    st.caption(f"Source: {attrs['Source']}")
+                if attrs.get("URL"):
+                    st.markdown(f"[View source]({attrs['URL']})")
+                if attrs.get("Physician Notes"):
+                    st.markdown(f"**My Interpretation:** {attrs['Physician Notes']}")
+                if attrs.get("Rationale"):
+                    st.markdown(f"**Rationale:** {attrs['Rationale']}")
+
+                with st.expander("✏️ Edit interpretation", expanded=False):
+                    cur = (attrs.get("Decision") or "Under review").strip()
+                    idx = DECISION_OPTIONS.index(cur) if cur in DECISION_OPTIONS else 2
+                    new_decision = st.selectbox("Decision", DECISION_OPTIONS, index=idx, key=f"gl_dec_{rule_id}")
+                    new_notes = st.text_area("Physician Notes", value=attrs.get("Physician Notes", ""), key=f"gl_notes_{rule_id}", placeholder="How I interpret / apply this for my patients...")
+                    new_rat = st.text_area("Rationale", value=attrs.get("Rationale", ""), key=f"gl_rat_{rule_id}", placeholder="Why I adopt or defer this...")
+                    bc1, bc2, _ = st.columns([1, 1, 4])
+                    if bc1.button("💾 Save", key=f"gl_save_{rule_id}", type="primary"):
+                        merged = dict(attrs)
+                        merged["Decision"] = new_decision
+                        merged["Physician Notes"] = new_notes
+                        merged["Rationale"] = new_rat
+                        save_guideline(s['category'], s['topic'], r['text'], merged, doctor_id)
+                        st.success("Interpretation updated.")
+                        st.rerun()
+                    if bc2.button("🗑 Delete", key=f"gl_del_{rule_id}"):
+                        delete_guideline(s['category'], s['topic'], r['text'], doctor_id)
+                        st.rerun()
+
+    if shown == 0:
+        st.caption("No matching guidelines found.")
+
+
 def render_pending_update_card(i: int, item: dict, doctor_id: str, suffix: str = "", expanded: bool = False):
     """Renders a single pending update card with Edit/Approve/Reject actions."""
     label = f"✨ [{item.get('category', 'General')}] {item.get('header', 'Miscellaneous')}"
@@ -623,6 +710,8 @@ def render_wiki_management():
     with tab_protocols: render_wiki_editor("clinical_protocols.md", "Protocols")
     with tab_prefs: render_wiki_editor("preferences.md", "Preferences")
     with tab_lit:
+        render_guidelines_repository(doctor_id, search_query, col_filter)
+        st.divider()
         st.subheader("🔍 Search Clinical Literature (PubMed)")
         lit_query = st.text_input("Find guidelines or studies...", placeholder="e.g. SGLT2 inhibitors heart failure", key="lit_search_input")
         if lit_query:
@@ -637,10 +726,11 @@ def render_wiki_management():
                     st.markdown("**Add to Wiki with My Interpretation**")
                     cat_lit = st.text_input("Category", value="Clinical Guidelines", key=f"cat_{r['id']}")
                     topic_lit = st.text_input("Topic", value="General", key=f"topic_{r['id']}")
+                    decision_lit = st.selectbox("Decision", DECISION_OPTIONS, key=f"dec_{r['id']}", help="Do you adopt this evidence into your practice, defer it, or are you still reviewing it?")
                     notes_lit = st.text_area("Physician Notes", placeholder="e.g., I adopt this for patients with...", key=f"notes_{r['id']}")
                     rational_lit = st.text_area("Rationale", placeholder="Why adopt/defer?", key=f"rat_{r['id']}")
                     if st.button("💾 Save to Wiki", key=f"save_lit_{r['id']}", type="primary"):
-                        attrs = {"Key Recommendation": r['title'], "Physician Notes": notes_lit, "Rationale": rational_lit, "Source": f"{r['source']} ({r['pubdate']})"}
+                        attrs = {"Key Recommendation": r['title'], "Decision": decision_lit, "Physician Notes": notes_lit, "Rationale": rational_lit, "Source": f"{r['source']} ({r['pubdate']})"}
                         save_guideline(cat_lit, topic_lit, r['title'], attrs, doctor_id)
                         st.success("Guideline added to wiki.")
                         st.rerun()
@@ -652,13 +742,14 @@ def render_wiki_management():
             ext_title = st.text_input("Article Title / Name")
             ext_cat = st.text_input("Category", value="External Evidence")
             ext_topic = st.text_input("Topic", value="General")
+            ext_decision = st.selectbox("Decision", DECISION_OPTIONS, help="Do you adopt this evidence into your practice, defer it, or are you still reviewing it?")
             ext_notes = st.text_area("Physician Notes")
             ext_rat = st.text_area("Rationale")
             submitted = st.form_submit_button("💾 Save External Source to Wiki")
             if submitted:
                 if not ext_title: st.error("Please provide a title.")
                 else:
-                    attrs = {"Physician Notes": ext_notes, "Rationale": ext_rat}
+                    attrs = {"Decision": ext_decision, "Physician Notes": ext_notes, "Rationale": ext_rat}
                     if ext_url: attrs["URL"] = ext_url
                     if ext_file: attrs["File"] = ext_file.name
                     save_guideline(ext_cat, ext_topic, ext_title, attrs, doctor_id)
