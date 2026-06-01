@@ -11,7 +11,8 @@
           "Evidence": "2022 AHA/ACC/HFSA Guideline [WikiID: 2f6961]"
         }
       }
-    ]
+    ],
+    "content": "- Check BMP at 1 week post-initiation of ARNI or MRA in HFrEF patients.\n  - Rationale: High risk of hyperkalemia and AKI in patients with baseline CKD [WikiID: 2f6961].\n  - Evidence: 2022 AHA/ACC/HFSA Guideline [WikiID: 2f6961]"
   },
   {
     "type": "protocol",
@@ -25,7 +26,8 @@
           "Evidence": "Surviving Sepsis Campaign 2021 [WikiID: d41bc0]"
         }
       }
-    ]
+    ],
+    "content": "- Limit initial fluid bolus to 20mL/kg in patients with concomitant HF or ESRD.\n  - Rationale: Standard 30mL/kg bolus carries a high risk of volume overload in susceptible populations [WikiID: d41bc0].\n  - Evidence: Surviving Sepsis Campaign 2021 [WikiID: d41bc0]"
   },
   {
     "type": "protocol",
@@ -39,7 +41,8 @@
           "Evidence": "2023 ACC/AHA AFib Guideline [WikiID: c94385]"
         }
       }
-    ]
+    ],
+    "content": "- For symptomatic AFib in patients >80 years old, defer rhythm control preference to cardiology or accept rate control as an alternative.\n  - Rationale: Early rhythm control is preferred generally, but clinical nuance is required for the elderly to balance symptom control vs. procedure risk [WikiID: c94385].\n  - Evidence: 2023 ACC/AHA AFib Guideline [WikiID: c94385]"
   },
   {
     "type": "protocol",
@@ -53,7 +56,8 @@
           "Evidence": "General clinical practice for recurrent HF decompensation [WikiID: b9f1b7, WikiID: 6bddc0]."
         }
       }
-    ]
+    ],
+    "content": "- In patients with HFrEF and anemia (Hgb < 12 g/dL), routinely order iron studies (ferritin, TSAT) and TSH as part of the precipitant/comorbidity workup.\n  - Rationale: Anemia and thyroid dysfunction may contribute to symptoms or exacerbate HFrEF; evaluating these factors aids in comprehensive management and identifying potential triggers for recurrent admissions.\n  - Evidence: General clinical practice for recurrent HF decompensation [WikiID: b9f1b7, WikiID: 6bddc0]."
   },
   {
     "type": "protocol",
@@ -67,7 +71,8 @@
           "Interpretation": "If cross-reactivity is suspected, evaluate for alternative non-sulfonamide loop diuretics like ethacrynic acid [WikiID: 410372]."
         }
       }
-    ]
+    ],
+    "content": "- For patients with a documented severe sulfa allergy (hives/anaphylaxis), perform a documented safety check for potential cross-reactivity with sulfonamide-derivative diuretics (e.g., Furosemide) before administration.\n  - Rationale: Standardization of safety screening to prevent potential allergic reactions.\n  - Interpretation: If cross-reactivity is suspected, evaluate for alternative non-sulfonamide loop diuretics like ethacrynic acid [WikiID: 410372]."
   },
   {
     "type": "preference",
@@ -80,7 +85,8 @@
           "Rationale": "Reduces clinical ambiguity and ensures clear, actionable plan-of-care for the multidisciplinary team [WikiID: cfacb2]."
         }
       }
-    ]
+    ],
+    "content": "- In the Assessment & Plan, specify explicit thresholds for downstream actions (e.g., 'start spironolactone when Cr stable and K <5.0') rather than using vague, deferred language.\n  - Rationale: Reduces clinical ambiguity and ensures clear, actionable plan-of-care for the multidisciplinary team [WikiID: cfacb2]."
   },
   {
     "type": "protocol",
@@ -93,7 +99,8 @@
           "Rationale": "Anchoring to a creeping dry weight perpetuates inadequate decongestion; using a lower target accounts for likely under-diuresis on prior admissions."
         }
       }
-    ]
+    ],
+    "content": "- When dry-weight creep is observed across admissions, set the new target dry weight below the most recent discharge weight (e.g., 3-4 kg below) rather than anchoring to the last documented dry weight.\n  - Rationale: Anchoring to a creeping dry weight perpetuates inadequate decongestion; using a lower target accounts for likely under-diuresis on prior admissions."
   },
   {
     "type": "protocol",
@@ -106,7 +113,8 @@
           "Rationale": "Self-reported adherence is unreliable in recurrent decompensations; objective verification is needed before attributing precipitant to non-adherence vs. other causes."
         }
       }
-    ]
+    ],
+    "content": "- For recurrent admissions where patient reports strict adherence, verify true adherence with pill counts and pharmacy refill history rather than relying on self-report alone.\n  - Rationale: Self-reported adherence is unreliable in recurrent decompensations; objective verification is needed before attributing precipitant to non-adherence vs. other causes."
   },
   {
     "type": "protocol",
@@ -119,7 +127,8 @@
           "Rationale": "Beta-blockers mask adrenergic symptoms of hypoglycemia, increasing risk of unrecognized hypoglycemic events."
         }
       }
-    ]
+    ],
+    "content": "- When carvedilol or other beta-blockers are continued in T2DM patients on sliding-scale insulin, instruct nursing to monitor glucose objectively (fingersticks QID) rather than relying on adrenergic hypoglycemia symptoms.\n  - Rationale: Beta-blockers mask adrenergic symptoms of hypoglycemia, increasing risk of unrecognized hypoglycemic events."
   },
   {
     "type": "protocol",
@@ -132,7 +141,8 @@
           "Rationale": "Concomitant ACEi/ARNI use causes angioedema risk; ARNI also has high PA likelihood under Medicare Part D and is a common cause of discharge delay."
         }
       }
-    ]
+    ],
+    "content": "- If switching from ACEi to ARNI per cardiology recommendation, require a 36-hour washout period and initiate Part D prior authorization workflow at least 48h before anticipated discharge.\n  - Rationale: Concomitant ACEi/ARNI use causes angioedema risk; ARNI also has high PA likelihood under Medicare Part D and is a common cause of discharge delay."
   },
   {
     "type": "protocol",
@@ -145,7 +155,8 @@
           "Rationale": "Continuing furosemide pending later review exposes the patient to repeated allergen doses; cross-reactivity must be resolved pre-dose, not flagged for later."
         }
       }
-    ]
+    ],
+    "content": "- When a patient with documented sulfa allergy has already received furosemide in the ED without a cross-reactivity check, do not defer the safety check \u2014 verify with pharmacy/attending BEFORE the next scheduled dose, and switch to ethacrynic acid if true reaction history.\n  - Rationale: Continuing furosemide pending later review exposes the patient to repeated allergen doses; cross-reactivity must be resolved pre-dose, not flagged for later."
   },
   {
     "type": "preference",
@@ -158,7 +169,8 @@
           "Rationale": "Truncated notes may omit safety-critical content (e.g., allergy lists, plan items) and pose medico-legal and clinical risk."
         }
       }
-    ]
+    ],
+    "content": "- Before sign-off, check that note drafts are not truncated mid-sentence or contain unclosed brackets/sections; flag incomplete drafts explicitly in safety review.\n  - Rationale: Truncated notes may omit safety-critical content (e.g., allergy lists, plan items) and pose medico-legal and clinical risk."
   },
   {
     "type": "preference",
@@ -171,7 +183,8 @@
           "Rationale": "Explicit numerical thresholds prevent ambiguity for covering clinicians and nursing staff regarding when to hold the next dose."
         }
       }
-    ]
+    ],
+    "content": "- Each home medication in the admission note should be annotated inline with explicit continue/hold/dose-adjust decision AND the specific numerical hold threshold parameters (e.g., 'Hold if SBP <100, Cr >2.0, or K+ >5.0').\n  - Rationale: Explicit numerical thresholds prevent ambiguity for covering clinicians and nursing staff regarding when to hold the next dose."
   },
   {
     "type": "preference",
@@ -184,7 +197,8 @@
           "Rationale": "Consolidating dose logic, safety thresholds, and discharge planning per-medication reduces handoff errors and discharge delays."
         }
       }
-    ]
+    ],
+    "content": "- Prescription agent_notes should include: dose rationale (e.g., 2x home PO for IV loop), explicit hold/escalation triggers with numerical thresholds, discharge transition plan (when to resume home regimen), and PA workflow timing for high-risk agents.\n  - Rationale: Consolidating dose logic, safety thresholds, and discharge planning per-medication reduces handoff errors and discharge delays."
   },
   {
     "type": "preference",
@@ -195,6 +209,108 @@
         "text": "When wiki drift audits encounter conflicting signals (e.g., 'no wiki loaded' but wiki content visible in context), explicitly flag the discrepancy and request physician confirmation rather than proceeding with a PASS verdict.",
         "attributes": {
           "Rationale": "Defaulting to PASS on ambiguous source state risks missing actual drift; physician must confirm authoritative wiki version."
+        }
+      }
+    ],
+    "content": "- When wiki drift audits encounter conflicting signals (e.g., 'no wiki loaded' but wiki content visible in context), explicitly flag the discrepancy and request physician confirmation rather than proceeding with a PASS verdict.\n  - Rationale: Defaulting to PASS on ambiguous source state risks missing actual drift; physician must confirm authoritative wiki version."
+  },
+  {
+    "type": "protocol",
+    "category": "Medications",
+    "header": "Inpatient medication PA flag interpretation",
+    "content": "- Formulary PA flags on standard inpatient agents (e.g., heparin SQ, insulin lispro) are typically Part D outpatient lookup artifacts \u2014 these agents are covered under inpatient Part A DRG bundling and do not require PA inpatient.\n  - Rationale: Avoid unnecessary PA workflows for bundled inpatient medications; reserve PA effort for true outpatient-transition agents (ARNI, SGLT2i).\n  - Interpretation: Annotate pa_notes to clarify Part A vs Part D distinction rather than triggering PA workflow.",
+    "rules": [
+      {
+        "text": "Formulary PA flags on standard inpatient agents (e.g., heparin SQ, insulin lispro) are typically Part D outpatient lookup artifacts \u2014 these agents are covered under inpatient Part A DRG bundling and do not require PA inpatient.",
+        "attributes": {
+          "Rationale": "Avoid unnecessary PA workflows for bundled inpatient medications; reserve PA effort for true outpatient-transition agents (ARNI, SGLT2i).",
+          "Interpretation": "Annotate pa_notes to clarify Part A vs Part D distinction rather than triggering PA workflow."
+        }
+      }
+    ]
+  },
+  {
+    "type": "protocol",
+    "category": "Medications",
+    "header": "Sulfa allergy and home loop diuretic tolerance",
+    "content": "- When a patient with documented sulfa allergy has tolerated home furosemide chronically, this supports clinical cross-reactivity tolerance \u2014 document this reasoning when proceeding with inpatient furosemide.\n  - Rationale: Prior tolerance of home dose is meaningful clinical evidence against clinically significant cross-reactivity, even when allergy is documented.\n  - Interpretation: Still requires pharmacy/attending verification before escalated IV dosing, but home tolerance reduces likelihood of reaction.",
+    "rules": [
+      {
+        "text": "When a patient with documented sulfa allergy has tolerated home furosemide chronically, this supports clinical cross-reactivity tolerance \u2014 document this reasoning when proceeding with inpatient furosemide.",
+        "attributes": {
+          "Rationale": "Prior tolerance of home dose is meaningful clinical evidence against clinically significant cross-reactivity, even when allergy is documented.",
+          "Interpretation": "Still requires pharmacy/attending verification before escalated IV dosing, but home tolerance reduces likelihood of reaction."
+        }
+      }
+    ]
+  },
+  {
+    "type": "protocol",
+    "category": "Diseases/Issues",
+    "header": "Type 2 diabetes during inpatient diuresis",
+    "content": "- When insulin sliding scale is used in patients on concurrent loop diuretic, monitor potassium daily \u2014 insulin shifts K+ intracellularly, additive with diuretic-induced K+ losses.\n  - Rationale: Compounded hypokalemia risk increases arrhythmia potential, especially in HFrEF.\n  - Diagnostic Questions: Is the patient on a beta-blocker that may mask hypoglycemia symptoms?",
+    "rules": [
+      {
+        "text": "When insulin sliding scale is used in patients on concurrent loop diuretic, monitor potassium daily \u2014 insulin shifts K+ intracellularly, additive with diuretic-induced K+ losses.",
+        "attributes": {
+          "Rationale": "Compounded hypokalemia risk increases arrhythmia potential, especially in HFrEF.",
+          "Diagnostic Questions": "Is the patient on a beta-blocker that may mask hypoglycemia symptoms?"
+        }
+      }
+    ]
+  },
+  {
+    "type": "preference",
+    "category": "Documentation",
+    "header": "Prescription pa_notes formatting",
+    "content": "- When formulary lookup flags PA on a standard inpatient agent, explicitly explain in pa_notes that the flag reflects outpatient Part D lookup and the agent is covered under inpatient Part A DRG bundling.\n  - Rationale: Prevents false-positive PA workflows on bundled inpatient meds and clarifies the artifact for downstream reviewers.",
+    "rules": [
+      {
+        "text": "When formulary lookup flags PA on a standard inpatient agent, explicitly explain in pa_notes that the flag reflects outpatient Part D lookup and the agent is covered under inpatient Part A DRG bundling.",
+        "attributes": {
+          "Rationale": "Prevents false-positive PA workflows on bundled inpatient meds and clarifies the artifact for downstream reviewers."
+        }
+      }
+    ]
+  },
+  {
+    "type": "preference",
+    "category": "Workflow",
+    "header": "Wiki drift check scope",
+    "content": "- Wiki drift checks should also surface internal Wiki consistency tensions (e.g., a deferral rule conflicting with an adopted guideline), not only physician-vs-guideline drift.\n  - Rationale: Internal contradictions create plan ambiguity at the bedside; surfacing them prompts explicit threshold-based deferrals per existing documentation standards.",
+    "rules": [
+      {
+        "text": "Wiki drift checks should also surface internal Wiki consistency tensions (e.g., a deferral rule conflicting with an adopted guideline), not only physician-vs-guideline drift.",
+        "attributes": {
+          "Rationale": "Internal contradictions create plan ambiguity at the bedside; surfacing them prompts explicit threshold-based deferrals per existing documentation standards."
+        }
+      }
+    ]
+  },
+  {
+    "type": "preference",
+    "category": "Workflow",
+    "header": "Guideline drift evidence citation",
+    "content": "- When flagging guideline drift, cite the specific landmark trial(s) that update the evidence base (e.g., EAST-AFNET 4 for early rhythm control, CLOVERS/CLASSIC for restrictive sepsis fluids).\n  - Rationale: Trial-level citations give the physician actionable grounds to revise stored reasoning, not just guideline reference.",
+    "rules": [
+      {
+        "text": "When flagging guideline drift, cite the specific landmark trial(s) that update the evidence base (e.g., EAST-AFNET 4 for early rhythm control, CLOVERS/CLASSIC for restrictive sepsis fluids).",
+        "attributes": {
+          "Rationale": "Trial-level citations give the physician actionable grounds to revise stored reasoning, not just guideline reference."
+        }
+      }
+    ]
+  },
+  {
+    "type": "preference",
+    "category": "Documentation",
+    "header": "Truncated document handling",
+    "content": "- If a document under review is truncated mid-section, explicitly flag the truncation and list which mandatory sections (A&P, problem list, code status, VTE ppx, orders) are not visible \u2014 do not infer their presence or absence.\n  - Rationale: Prevents false-pass safety clearance and forces the physician to supply the complete document before sign-off.",
+    "rules": [
+      {
+        "text": "If a document under review is truncated mid-section, explicitly flag the truncation and list which mandatory sections (A&P, problem list, code status, VTE ppx, orders) are not visible \u2014 do not infer their presence or absence.",
+        "attributes": {
+          "Rationale": "Prevents false-pass safety clearance and forces the physician to supply the complete document before sign-off."
         }
       }
     ]

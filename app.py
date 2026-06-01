@@ -470,7 +470,49 @@ def humanize_citations(text: str, doctor_id: str = "default") -> str:
     return _CITATION_PATTERN.sub(_repl, text)
 
 
-def _render_citation_detail(insight: dict, insight_id: str):
+# Attribute keys that mark a wiki entry as clinical literature/guideline (vs. a protocol/preference).
+_LITERATURE_MARKERS = ("Key Recommendation", "Source", "URL", "Decision")
+
+
+def _is_literature(insight: dict) -> bool:
+    """True if a resolved wiki entry looks like a guideline/literature reference."""
+    return any(k in (insight.get("attributes") or {}) for k in _LITERATURE_MARKERS)
+
+
+def _related_literature(insight: dict, self_id: str, doctor_id: str) -> list:
+    """Resolves WikiIDs embedded in a note's text/attributes to any linked literature entries."""
+    attrs = insight.get("attributes") or {}
+    blob = " ".join([insight.get("rule", "")] + [str(v) for v in attrs.values()])
+    related, seen = [], {(self_id or "").lower()}
+    for cid in _extract_citation_ids(blob):
+        if cid in seen:
+            continue
+        seen.add(cid)
+        ref = get_wiki_insight(doctor_id, cid)
+        if ref and _is_literature(ref):
+            related.append((cid, ref))
+    return related
+
+
+def _render_related_literature(insight: dict, self_id: str, doctor_id: str):
+    """Shows clinical literature/guidelines embedded within a wiki note, if any."""
+    related = _related_literature(insight, self_id, doctor_id)
+    if not related:
+        return
+    st.divider()
+    st.markdown("**📖 Related literature**")
+    for cid, ref in related:
+        rattrs = ref.get("attributes") or {}
+        st.markdown(f"- *{ref['rule']}*")
+        bits = []
+        if rattrs.get("Key Recommendation"): bits.append(rattrs["Key Recommendation"])
+        if rattrs.get("Source"): bits.append(f"Source: {rattrs['Source']}")
+        if rattrs.get("Decision"): bits.append(f"Decision: {rattrs['Decision']}")
+        if bits: st.caption(" · ".join(bits))
+        if rattrs.get("URL"): st.markdown(f"[View source]({rattrs['URL']})")
+
+
+def _render_citation_detail(insight: dict, insight_id: str, doctor_id: str = "default"):
     """Renders the full source detail shown inside a citation popover / reference card."""
     if not insight:
         st.caption(f"Reference `{insight_id}` is not in your current wiki — it may have been edited or removed.")
@@ -485,6 +527,7 @@ def _render_citation_detail(insight: dict, insight_id: str):
     if attrs.get("URL"): st.markdown(f"[View source]({attrs['URL']})")
     if attrs.get("Physician Notes"): st.markdown(f"**My Interpretation:** {attrs['Physician Notes']}")
     if attrs.get("Rationale"): st.markdown(f"**Rationale:** {attrs['Rationale']}")
+    _render_related_literature(insight, insight_id, doctor_id)
 
 
 def render_content_with_citations(text: str, key_suffix: str, doctor_id: str = "default", chips_only: bool = False):
@@ -512,7 +555,7 @@ def render_content_with_citations(text: str, key_suffix: str, doctor_id: str = "
             label = f"📚 {_citation_label(insight, fallback=cid)}"
             if has_popover:
                 with st.popover(label, use_container_width=True):
-                    _render_citation_detail(insight, cid)
+                    _render_citation_detail(insight, cid, doctor_id)
             elif st.button(label, key=f"cit_{cid}_{key_suffix}_{i}", type="secondary"):
                 st.session_state.active_citation = cid
                 st.rerun()
@@ -527,6 +570,7 @@ def render_wiki_reference_card(doctor_id: str = "default"):
         st.markdown(f'<div class="wiki-ref-header">📚 Wiki Reference</div>', unsafe_allow_html=True)
         st.markdown(f"**{insight['category']}** > {insight['topic']}")
         st.info(f"*{insight['rule']}*")
+        _render_related_literature(insight, insight_id, doctor_id)
         if st.button("Close reference", use_container_width=True, type="primary"):
             st.session_state.active_citation = None
             st.rerun()
