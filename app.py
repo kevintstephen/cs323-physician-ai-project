@@ -423,21 +423,99 @@ def get_related_updates(text: str, pending_list: list[dict]) -> list[int]:
             related_indices.append(i)
     return related_indices
 
-def render_content_with_citations(text: str, key_suffix: str, doctor_id: str = "default"):
-    """Renders text cleanly and places interactive wiki citation buttons."""
+# Matches a citation token, including comma-separated multi-ID lists like
+# [WikiID: cdac3, 1b58ba, 274621] as well as bare/parenthesized variants. The id group is
+# captured greedily as one id followed by any number of ", id" repeats so multi-ID lists
+# are kept whole (a non-greedy capture with an optional closing bracket would stop at the
+# first character).
+_CITATION_PATTERN = re.compile(r'[\[\(]?\s*WikiID:\s*([a-zA-Z0-9]{3,}(?:\s*,\s*[a-zA-Z0-9]{3,})*)\s*[\]\)]?', re.IGNORECASE)
+
+
+def _split_citation_ids(raw: str) -> list[str]:
+    """Splits a captured id group (possibly comma/space separated) into clean lowercase ids."""
+    return [p.strip().lower() for p in re.split(r'[,\s]+', raw) if p.strip()]
+
+
+def _extract_citation_ids(text: str) -> list[str]:
+    """Returns the ordered, de-duplicated wiki IDs referenced anywhere in text."""
+    ids: list[str] = []
+    for m in _CITATION_PATTERN.finditer(text or ""):
+        for cid in _split_citation_ids(m.group(1)):
+            if cid not in ids:
+                ids.append(cid)
+    return ids
+
+
+def _citation_label(insight: dict, fallback: str = "") -> str:
+    """Human-readable chip label from a get_wiki_insight() dict: 'Topic · Source'."""
+    if not insight:
+        return fallback or "Wiki ref"
+    label = insight.get("topic") or insight.get("category") or "Wiki ref"
+    source = (insight.get("attributes") or {}).get("Source")
+    if source:
+        label += f" · {source if len(source) <= 32 else source[:29] + '…'}"
+    return label
+
+
+def humanize_citations(text: str, doctor_id: str = "default") -> str:
+    """Replaces raw [WikiID: xxx] tokens with readable [📚 Topic] labels for inline display."""
+    if not text:
+        return text
+    def _repl(m):
+        labels = []
+        for cid in _split_citation_ids(m.group(1)):
+            insight = get_wiki_insight(doctor_id, cid)
+            labels.append(insight.get("topic") if insight else cid)
+        return f"[📚 {'; '.join(labels)}]" if labels else m.group(0)
+    return _CITATION_PATTERN.sub(_repl, text)
+
+
+def _render_citation_detail(insight: dict, insight_id: str):
+    """Renders the full source detail shown inside a citation popover / reference card."""
+    if not insight:
+        st.caption(f"Reference `{insight_id}` is not in your current wiki — it may have been edited or removed.")
+        return
+    attrs = insight.get("attributes") or {}
+    st.markdown(f"**{insight['category']}** › {insight['topic']}")
+    if attrs.get("Decision"):
+        _render_decision_badge(attrs.get("Decision"))
+    st.info(insight["rule"])
+    if attrs.get("Key Recommendation"): st.markdown(f"**Key Recommendation:** {attrs['Key Recommendation']}")
+    if attrs.get("Source"): st.caption(f"Source: {attrs['Source']}")
+    if attrs.get("URL"): st.markdown(f"[View source]({attrs['URL']})")
+    if attrs.get("Physician Notes"): st.markdown(f"**My Interpretation:** {attrs['Physician Notes']}")
+    if attrs.get("Rationale"): st.markdown(f"**Rationale:** {attrs['Rationale']}")
+
+
+def render_content_with_citations(text: str, key_suffix: str, doctor_id: str = "default", chips_only: bool = False):
+    """Renders agent text with each WikiID turned into a labeled, self-describing source chip.
+
+    Each chip names the guideline/protocol (topic · source) so the physician sees *where*
+    a suggestion came from at a glance, and reveals the full rule, adopt/defer decision, and
+    interpretation inline via st.popover. chips_only=True skips the body text — use it when the
+    same text is shown in an adjacent editable widget.
+    """
     if not text: return
-    pattern = r'[\[\(]?WikiID:\s*([a-zA-Z0-9]+)[\]\)]?'
-    display_text = re.sub(pattern, '', text).strip()
-    display_text = re.sub(r'\s{2,}', ' ', display_text)
-    st.markdown(display_text)
-    citations = re.findall(pattern, text)
-    if citations:
-        cit_cols = st.columns([0.15] * 5 + [0.25])
-        for i, insight_id in enumerate(citations[:5]):
-            with cit_cols[i]:
-                if st.button("📚 Wiki", key=f"cit_{insight_id}_{key_suffix}_{i}", type="secondary"):
-                    st.session_state.active_citation = insight_id.lower()
-                    st.rerun()
+    ids = _extract_citation_ids(text)
+    if not chips_only:
+        display_text = re.sub(r'[ \t]{2,}', ' ', _CITATION_PATTERN.sub('', text)).strip()
+        st.markdown(display_text)
+    if not ids:
+        return
+    if chips_only:
+        st.caption("📚 Sources from your wiki:")
+    insights = [(cid, get_wiki_insight(doctor_id, cid)) for cid in ids[:8]]
+    has_popover = hasattr(st, "popover")
+    cols = st.columns(min(len(insights), 4))
+    for i, (cid, insight) in enumerate(insights):
+        with cols[i % len(cols)]:
+            label = f"📚 {_citation_label(insight, fallback=cid)}"
+            if has_popover:
+                with st.popover(label, use_container_width=True):
+                    _render_citation_detail(insight, cid)
+            elif st.button(label, key=f"cit_{cid}_{key_suffix}_{i}", type="secondary"):
+                st.session_state.active_citation = cid
+                st.rerun()
 
 def render_wiki_reference_card(doctor_id: str = "default"):
     """Renders the cited wiki quote in the sticky panel."""
@@ -889,7 +967,9 @@ def _dialog_ci_meds(med_actions: list):
     selected = []
     for i, action in enumerate(med_actions):
         st.markdown(f"{_URGENCY_ICON.get(action.get('urgency', 'routine'), '⚪')} **{action.get('title', '?')}**")
-        if action.get("detail"): st.caption(action["detail"])
+        if action.get("detail"):
+            st.caption(humanize_citations(action["detail"]))
+            render_content_with_citations(action["detail"], f"ci_med_{i}", chips_only=True)
         edited = st.text_input("Order text", value=action.get("title", ""), key=f"ci_med_edit_{i}", label_visibility="collapsed")
         if st.checkbox("Include in order", value=True, key=f"ci_med_chk_{i}"): selected.append({**action, "title": edited})
         st.divider()
@@ -903,7 +983,9 @@ def _dialog_ci_labs(lab_actions: list):
     selected = []
     for i, action in enumerate(lab_actions):
         if st.checkbox(f"{_URGENCY_ICON.get(action.get('urgency', 'routine'), '⚪')} **{action.get('title', '?')}**", value=True, key=f"ci_lab_chk_{i}"): selected.append(action)
-        if action.get("detail"): st.caption(f"  {action['detail']}")
+        if action.get("detail"):
+            st.caption(f"  {humanize_citations(action['detail'])}")
+            render_content_with_citations(action["detail"], f"ci_lab_{i}", chips_only=True)
     st.divider()
     if st.button(f"Send {len(selected)} Order(s) to Epic", type="primary", use_container_width=True, disabled=not selected):
         st.session_state["ci_labs_sent"], st.session_state["show_ci_labs"] = True, False
@@ -913,10 +995,12 @@ def _dialog_ci_labs(lab_actions: list):
 def _dialog_ci_updates(changes: list, note_actions: list, patient_id: str):
     if changes:
         st.markdown("**What changed:**")
-        for c in changes: st.markdown(f"{_TREND_ICON.get(c.get('trend', ''), '•')} **{c.get('finding', '')}** — {c.get('significance', '')}")
+        for c in changes: st.markdown(f"{_TREND_ICON.get(c.get('trend', ''), '•')} **{c.get('finding', '')}** — {humanize_citations(c.get('significance', ''))}")
         st.divider()
     note_lines = [f"- {c.get('finding', '')}: {c.get('significance', '')}" for c in changes] + [f"- {a.get('title', '')}: {a.get('detail', '')}" for a in note_actions]
-    edited = st.text_area("Patient file update", value="\n".join(note_lines), height=300)
+    note_blob = "\n".join(note_lines)
+    edited = st.text_area("Patient file update", value=humanize_citations(note_blob), height=300)
+    render_content_with_citations(note_blob, "ci_updates", chips_only=True)
     c1, c2 = st.columns(2)
     if c1.button("Save to Patient File", type="primary", use_container_width=True):
         _CACHE_DIR.mkdir(parents=True, exist_ok=True)
@@ -966,20 +1050,38 @@ def render_checkin_inline(patient_id: str, patient_data: dict, llm_provider: str
     c1, c2, c3 = st.columns(3)
     with c1:
         st.markdown(f'<div class="action-card"><div class="action-card-icon">💊</div><div class="action-card-title">Med Changes</div><div class="action-card-{"done" if ci_meds_done else "sub"}">{meds_sub}</div></div>', unsafe_allow_html=True)
-        if st.button("Review & Send →" if not ci_meds_done else "Review Again", key="ci_open_meds", type="primary" if not ci_meds_done else "secondary", use_container_width=True, disabled=not med_actions): st.session_state["show_ci_meds"] = True
+        if st.button("Review & Send →" if not ci_meds_done else "Review Again", key="ci_open_meds", type="primary" if not ci_meds_done else "secondary", use_container_width=True, disabled=not med_actions): _open_exclusive_dialog("show_ci_meds", _CHECKIN_DIALOGS)
     with c2:
         st.markdown(f'<div class="action-card"><div class="action-card-icon">🧪</div><div class="action-card-title">Labs</div><div class="action-card-{"done" if ci_labs_done else "sub"}">{labs_sub}</div></div>', unsafe_allow_html=True)
-        if st.button("Review & Send →" if not ci_labs_done else "Review Again", key="ci_open_labs", type="primary" if not ci_labs_done else "secondary", use_container_width=True, disabled=not lab_actions): st.session_state["show_ci_labs"] = True
+        if st.button("Review & Send →" if not ci_labs_done else "Review Again", key="ci_open_labs", type="primary" if not ci_labs_done else "secondary", use_container_width=True, disabled=not lab_actions): _open_exclusive_dialog("show_ci_labs", _CHECKIN_DIALOGS)
     with c3:
         st.markdown(f'<div class="action-card"><div class="action-card-icon">📋</div><div class="action-card-title">Clinical Updates</div><div class="action-card-{"done" if ci_updates_done else "sub"}">{updates_sub}</div></div>', unsafe_allow_html=True)
-        if st.button("Review & Save →" if not ci_updates_done else "Review Again", key="ci_open_updates", type="primary" if not i_updates_done else "secondary", use_container_width=True): st.session_state["show_ci_updates"] = True
-    if st.session_state.get("show_ci_meds"): _dialog_ci_meds(med_actions)
-    if st.session_state.get("show_ci_labs"): _dialog_ci_labs(lab_actions)
-    if st.session_state.get("show_ci_updates"): _dialog_ci_updates(changes, update_actions, patient_id)
+        if st.button("Review & Save →" if not ci_updates_done else "Review Again", key="ci_open_updates", type="primary" if not ci_updates_done else "secondary", use_container_width=True): _open_exclusive_dialog("show_ci_updates", _CHECKIN_DIALOGS)
+    _active_ci_dialog = next((k for k in _CHECKIN_DIALOGS if st.session_state.get(k)), None)
+    if _active_ci_dialog == "show_ci_meds": _dialog_ci_meds(med_actions)
+    elif _active_ci_dialog == "show_ci_labs": _dialog_ci_labs(lab_actions)
+    elif _active_ci_dialog == "show_ci_updates": _dialog_ci_updates(changes, update_actions, patient_id)
     st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
     if st.button("Upload new file", type="secondary", key="ci_reset"):
         for _k in ("checkin_result", "checkin_file_key", "ci_meds_sent", "ci_labs_sent", "ci_updates_saved", "show_ci_meds", "show_ci_labs", "show_ci_updates"): st.session_state.pop(_k, None)
         st.rerun()
+
+# ---------------------------------------------------------------------------
+# Dialog management
+# ---------------------------------------------------------------------------
+
+# Streamlit allows only ONE @st.dialog open per script run. Each group below is
+# mutually exclusive; opening one clears its siblings so two flags can never be set
+# at once (dismissing a dialog does not auto-reset its flag).
+_ADMISSION_DIALOGS = ["show_rx_dialog", "show_labs_dialog", "show_notes_dialog"]
+_CHECKIN_DIALOGS = ["show_ci_meds", "show_ci_labs", "show_ci_updates"]
+
+
+def _open_exclusive_dialog(active: str, group: list):
+    """Opens one dialog in a group and closes the others."""
+    for k in group:
+        st.session_state[k] = (k == active)
+
 
 # ---------------------------------------------------------------------------
 # Prescription UI
@@ -996,10 +1098,12 @@ def _render_rx_card(idx: int, rx: dict):
         c4, c5, c6 = st.columns(3)
         freq, qty, ref = c4.text_input("Frequency", value=rx.get("frequency", ""), key=f"rx_freq_{idx}"), c5.text_input("Quantity", value=rx.get("quantity", ""), key=f"rx_qty_{idx}"), c6.text_input("Refills", value=rx.get("refills", "0"), key=f"rx_ref_{idx}")
         ind = st.text_input("Indication", value=rx.get("indication", ""), key=f"rx_ind_{idx}")
-        st.text_area("Agent notes / monitoring", value=rx.get("agent_notes", ""), height=80, key=f"rx_notes_{idx}")
-        if rx.get("drug_info_summary"): st.caption(f"ℹ️ **Drug info:** {rx['drug_info_summary']}")
-        if rx.get("pa_notes"): (st.warning if pa_req else st.caption)(f"**PA:** {rx['pa_notes']}")
+        st.text_area("Agent notes / monitoring", value=humanize_citations(rx.get("agent_notes", "")), height=80, key=f"rx_notes_{idx}")
+        if rx.get("drug_info_summary"): st.caption(f"ℹ️ **Drug info:** {humanize_citations(rx['drug_info_summary'])}")
+        if rx.get("pa_notes"): (st.warning if pa_req else st.caption)(f"**PA:** {humanize_citations(rx['pa_notes'])}")
         if rx.get("alternatives"): st.caption("**Alternatives:** " + " · ".join(rx["alternatives"]))
+        _rx_cite_text = " ".join([rx.get("agent_notes", ""), rx.get("drug_info_summary", ""), rx.get("pa_notes", "")])
+        render_content_with_citations(_rx_cite_text, f"rx_{idx}", chips_only=True)
         b1, b2, _ = st.columns([1, 1, 4])
         if b1.button("✓ Approve", key=f"approve_{idx}", type="primary"):
             st.session_state["approved_orders"].append({"_idx": idx, "drug_name": drug_name, "dose": dose, "route": route, "frequency": freq, "quantity": qty, "refills": ref, "indication": ind, "status": "pending_pharmacy"})
@@ -1033,7 +1137,9 @@ def _dialog_labs(lab_actions: list):
     st.caption("Select orders to send."); st.divider(); selected, icon_map = [], {"now": "🔴", "today": "🟡", "routine": "⚪"}
     for i, a in enumerate(lab_actions):
         if st.checkbox(f"{icon_map.get(a.get('urgency', 'routine'), '⚪')} **{a.get('title', '?')}**", value=True, key=f"lab_chk_{i}"): selected.append(a)
-        if a.get("detail"): st.caption(f"  {a['detail']}")
+        if a.get("detail"):
+            st.caption(f"  {humanize_citations(a['detail'])}")
+            render_content_with_citations(a["detail"], f"lab_{i}", chips_only=True)
     st.divider()
     if st.button(f"Send {len(selected)} Order(s) to Epic", type="primary", use_container_width=True, disabled=not selected):
         st.session_state["labs_sent_to_epic"], st.session_state["show_labs_dialog"] = True, False
@@ -1041,7 +1147,8 @@ def _dialog_labs(lab_actions: list):
 
 @st.dialog("📋 Admission Note", width="large")
 def _dialog_notes(note_text: str, patient_id: str):
-    edited = st.text_area("", value=note_text, height=450, label_visibility="collapsed", key="dialog_note_ta")
+    edited = st.text_area("", value=humanize_citations(note_text), height=450, label_visibility="collapsed", key="dialog_note_ta")
+    render_content_with_citations(note_text, "adm_note", chips_only=True)
     c1, c2 = st.columns(2)
     if c1.button("Save to Patient File", type="primary", use_container_width=True):
         _CACHE_DIR.mkdir(parents=True, exist_ok=True); (_CACHE_DIR / f"{patient_id}_note.md").write_text(edited)
@@ -1072,18 +1179,19 @@ def render_admission_results(outputs: dict, patient_name: str, patient_id: str, 
     rx_sub, lab_sub, note_sub = "✓ Sent to Epic" if rx_done else (f"{rx_pending} medication(s)" if rx_pending else "All approved"), "✓ Sent to Epic" if labs_done else (f"{len(lab_actions)} lab order(s)" if lab_actions else "No orders"), "✓ Saved" if note_done else "Admission note ready"
     with c1:
         st.markdown(f'<div class="action-card"><div class="action-card-icon">💊</div><div class="action-card-title">Prescriptions</div><div class="action-card-{"done" if rx_done else "sub"}">{rx_sub}</div></div>', unsafe_allow_html=True)
-        if st.button("Review & Send →" if not rx_done else "Review Again", key="open_rx", use_container_width=True, type="primary" if not rx_done else "secondary", disabled=not rxs): st.session_state["show_rx_dialog"] = True
+        if st.button("Review & Send →" if not rx_done else "Review Again", key="open_rx", use_container_width=True, type="primary" if not rx_done else "secondary", disabled=not rxs): _open_exclusive_dialog("show_rx_dialog", _ADMISSION_DIALOGS)
     with c2:
         st.markdown(f'<div class="action-card"><div class="action-card-icon">🧪</div><div class="action-card-title">Labs</div><div class="action-card-{"done" if labs_done else "sub"}">{lab_sub}</div></div>', unsafe_allow_html=True)
-        if st.button("Review & Send →" if not labs_done else "Review Again", key="open_labs", use_container_width=True, type="primary" if not labs_done else "secondary", disabled=not lab_actions): st.session_state["show_labs_dialog"] = True
+        if st.button("Review & Send →" if not labs_done else "Review Again", key="open_labs", use_container_width=True, type="primary" if not labs_done else "secondary", disabled=not lab_actions): _open_exclusive_dialog("show_labs_dialog", _ADMISSION_DIALOGS)
     with c3:
         st.markdown(f'<div class="action-card"><div class="action-card-icon">📋</div><div class="action-card-title">Admission Note</div><div class="action-card-{"done" if note_done else "sub"}">{note_sub}</div></div>', unsafe_allow_html=True)
-        if st.button("Review & Sign →" if not note_done else "Review Again", key="open_note", use_container_width=True, type="primary" if not note_done else "secondary", disabled=not note_text): st.session_state["show_notes_dialog"] = True
-    if st.session_state.get("show_rx_dialog"): _dialog_prescriptions()
-    if st.session_state.get("show_labs_dialog"): _dialog_labs(lab_actions)
-    if st.session_state.get("show_notes_dialog"): _dialog_notes(note_text, patient_id)
+        if st.button("Review & Sign →" if not note_done else "Review Again", key="open_note", use_container_width=True, type="primary" if not note_done else "secondary", disabled=not note_text): _open_exclusive_dialog("show_notes_dialog", _ADMISSION_DIALOGS)
+    _active_dialog = next((k for k in _ADMISSION_DIALOGS if st.session_state.get(k)), None)
+    if _active_dialog == "show_rx_dialog": _dialog_prescriptions()
+    elif _active_dialog == "show_labs_dialog": _dialog_labs(lab_actions)
+    elif _active_dialog == "show_notes_dialog": _dialog_notes(note_text, patient_id)
     if "safety_check" in outputs:
-        with st.expander("Safety Check", expanded=False): st.markdown(outputs["safety_check"])
+        with st.expander("Safety Check", expanded=False): render_content_with_citations(outputs["safety_check"], "adm_safety")
 
 def _render_episode_learnings(pending_all: list, patient_name: str, doctor_id: str = "default"):
     if not pending_all: return
@@ -1097,11 +1205,15 @@ def _render_episode_learnings(pending_all: list, patient_name: str, doctor_id: s
     st.markdown(f'<div class="insights-card"><div class="insights-title">✦ Wiki updated from {patient_name}\'s episode</div><div class="insights-sub">{len(pending_all)} insight(s) added automatically.</div><div class="insights-grid">{chips_html}</div></div>', unsafe_allow_html=True)
 
 def render_discharge_results(outputs: dict, pending_all: list, patient_name: str = ""):
-    if "discharge_summary" in outputs: st.markdown("### Discharge Summary"); st.text_area("", value=outputs["discharge_summary"], height=300, key="dc_summary_ta", label_visibility="collapsed"); st.divider()
-    if "patient_instructions" in outputs: st.markdown("### Patient Instructions"); st.text_area("", value=outputs["patient_instructions"], height=250, key="dc_instructions_ta", label_visibility="collapsed"); st.divider()
-    if "discharge_checklist" in outputs: st.markdown("### Sign-off Checklist"); st.markdown(outputs["discharge_checklist"]); st.divider()
+    if "discharge_summary" in outputs:
+        st.markdown("### Discharge Summary"); st.text_area("", value=humanize_citations(outputs["discharge_summary"]), height=300, key="dc_summary_ta", label_visibility="collapsed")
+        render_content_with_citations(outputs["discharge_summary"], "dc_summary", chips_only=True); st.divider()
+    if "patient_instructions" in outputs:
+        st.markdown("### Patient Instructions"); st.text_area("", value=humanize_citations(outputs["patient_instructions"]), height=250, key="dc_instructions_ta", label_visibility="collapsed")
+        render_content_with_citations(outputs["patient_instructions"], "dc_instructions", chips_only=True); st.divider()
+    if "discharge_checklist" in outputs: st.markdown("### Sign-off Checklist"); render_content_with_citations(outputs["discharge_checklist"], "dc_checklist"); st.divider()
     if "safety_check" in outputs:
-        with st.expander("Safety Check", expanded=False): st.markdown(outputs["safety_check"])
+        with st.expander("Safety Check", expanded=False): render_content_with_citations(outputs["safety_check"], "dc_safety")
     if pending_all: st.divider(); _render_episode_learnings(pending_all, patient_name or "this patient")
 
 # ---------------------------------------------------------------------------
