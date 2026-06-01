@@ -1120,6 +1120,16 @@ def render_checkin_inline(patient_id: str, patient_data: dict, llm_provider: str
 _ADMISSION_DIALOGS = ["show_rx_dialog", "show_labs_dialog", "show_notes_dialog"]
 _CHECKIN_DIALOGS = ["show_ci_meds", "show_ci_labs", "show_ci_updates"]
 
+# Agent reasoning outputs surfaced (in workflow order) in the durable admission review.
+_ADMISSION_AGENT_NOTES = [
+    ("chart_review", "📊 Chart Review"),
+    ("lab_interpretation", "🧬 Lab Interpretation"),
+    ("ed_note_synthesis", "🚑 ED Note Synthesis"),
+    ("consultant_routing", "👥 Consultant Routing"),
+    ("safety_check", "⚠️ Safety Check"),
+    ("wiki_drift_check", "📚 Wiki Alignment"),
+]
+
 
 def _open_exclusive_dialog(active: str, group: list):
     """Opens one dialog in a group and closes the others."""
@@ -1234,8 +1244,16 @@ def render_admission_results(outputs: dict, patient_name: str, patient_id: str, 
     if _active_dialog == "show_rx_dialog": _dialog_prescriptions()
     elif _active_dialog == "show_labs_dialog": _dialog_labs(lab_actions)
     elif _active_dialog == "show_notes_dialog": _dialog_notes(note_text, patient_id)
-    if "safety_check" in outputs:
-        with st.expander("Safety Check", expanded=False): render_content_with_citations(outputs["safety_check"], "adm_safety")
+
+    # Durable record of every agent's reasoning so the physician can review the full
+    # analysis after completion (the live run trace is gone once the workflow reruns).
+    st.divider()
+    st.markdown("### 🔍 Agent Notes & Analysis")
+    st.caption("Review each agent's reasoning and recommendations. Source chips link to the guideline or protocol behind each suggestion.")
+    for step_name, title in _ADMISSION_AGENT_NOTES:
+        if outputs.get(step_name):
+            with st.expander(title, expanded=False):
+                render_content_with_citations(outputs[step_name], f"adm_{step_name}")
 
 def _render_episode_learnings(pending_all: list, patient_name: str, doctor_id: str = "default"):
     if not pending_all: return

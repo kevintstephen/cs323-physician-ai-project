@@ -314,5 +314,61 @@
         }
       }
     ]
+  },
+  {
+    "type": "protocol",
+    "category": "Diseases/Issues",
+    "header": "Heart failure exacerbation",
+    "content": "- When assessing patients with HFrEF and comorbid anemia, order iron studies (ferritin, TSAT) to evaluate for IV iron candidacy [WikiID: 2fd5f4, 6bddc0].\n  - Rationale: Provides mortality and hospitalization benefit in HFrEF patients.",
+    "rules": [
+      {
+        "text": "When assessing patients with HFrEF and comorbid anemia, order iron studies (ferritin, TSAT) to evaluate for IV iron candidacy [WikiID: 2fd5f4, 6bddc0].",
+        "attributes": {
+          "Rationale": "Provides mortality and hospitalization benefit in HFrEF patients."
+        }
+      }
+    ]
+  },
+  {
+    "type": "protocol",
+    "category": "Diseases/Issues",
+    "header": "Sepsis",
+    "content": "- For patients with HF/ESRD, use a 20mL/kg fluid resuscitation bolus rather than the standard 30mL/kg recommendation [WikiID: d41bc0].\n  - Rationale: Standard 30mL/kg bolus risks volume overload in HF/ESRD population; favors weight-adjusted, response-guided resuscitation.",
+    "rules": [
+      {
+        "text": "For patients with HF/ESRD, use a 20mL/kg fluid resuscitation bolus rather than the standard 30mL/kg recommendation [WikiID: d41bc0].",
+        "attributes": {
+          "Rationale": "Standard 30mL/kg bolus risks volume overload in HF/ESRD population; favors weight-adjusted, response-guided resuscitation."
+        }
+      }
+    ]
+  },
+  {
+    "type": "preference",
+    "category": "Communication Style",
+    "header": "Consultant communication",
+    "content": "- When consulting for ADHF in HFrEF, provide the following 'must-haves': current EF, BNP, baseline vs. current Cr, current GDMT (with notable gaps), and device status [WikiID: 312408, a96ede].\n  - Rationale: Ensures the consultant has the critical context required for device/escalation decisions.",
+    "rules": [
+      {
+        "text": "When consulting for ADHF in HFrEF, provide the following 'must-haves': current EF, BNP, baseline vs. current Cr, current GDMT (with notable gaps), and device status [WikiID: 312408, a96ede].",
+        "attributes": {
+          "Rationale": "Ensures the consultant has the critical context required for device/escalation decisions."
+        }
+      }
+    ]
+  },
+  {
+    "type": "preference",
+    "category": "Documentation",
+    "header": "Assessment & Plan content",
+    "content": "- Explicitly state thresholds for downstream actions (e.g., 'start spironolactone when Cr stable and K <5.0') rather than utilizing vague deferrals [WikiID: cfacb2].\n  - Rationale: Ensures clear triggers for medication initiation and clinical progression.",
+    "rules": [
+      {
+        "text": "Explicitly state thresholds for downstream actions (e.g., 'start spironolactone when Cr stable and K <5.0') rather than utilizing vague deferrals [WikiID: cfacb2].",
+        "attributes": {
+          "Rationale": "Ensures clear triggers for medication initiation and clinical progression."
+        }
+      }
+    ]
   }
 ]

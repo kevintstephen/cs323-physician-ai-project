@@ -118,30 +118,37 @@ class WorkflowEngine:
                 for gs in group_steps:
                     yield gs.name, step_results[gs.name], state
 
-        # Post-processing (context synthesis + wiki substrate) runs in a
-        # background thread so the physician sees results immediately.
+        # Post-processing. Context synthesis + record save run SYNCHRONOUSLY so the
+        # WorkflowRecord is persisted before the caller reruns its UI — otherwise the
+        # Care Episode sidebar (read at the top of the next run) would miss this
+        # just-completed workflow until the next interaction. The heavier wiki-substrate
+        # extraction stays in a background thread so the physician still sees results
+        # promptly; its output only feeds the (non-time-sensitive) Wiki Management queue.
         if patient_context is not None:
             frozen_outputs = dict(state.outputs)
 
+            try:
+                synthesizer = ContextSynthesisAgent(self.backend, self.model)
+                _, parsed = synthesizer.synthesize(
+                    patient_id=session.patient_id,
+                    workflow_name=workflow_name or "workflow",
+                    outputs=frozen_outputs,
+                )
+                record = WorkflowRecord(
+                    workflow=workflow_name or "workflow",
+                    timestamp=datetime.now(timezone.utc).isoformat(),
+                    summary=parsed.get("summary", ""),
+                    key_findings=parsed.get("key_findings", []),
+                    open_issues=parsed.get("open_issues", []),
+                    resolved_issues=parsed.get("resolved_issues", []),
+                )
+                patient_context.add_record(record)
+                patient_context.save()
+            except Exception:
+                pass  # Synthesis failure must never block the physician's results
+
             def _post_process():
                 try:
-                    synthesizer = ContextSynthesisAgent(self.backend, self.model)
-                    _, parsed = synthesizer.synthesize(
-                        patient_id=session.patient_id,
-                        workflow_name=workflow_name or "workflow",
-                        outputs=frozen_outputs,
-                    )
-                    record = WorkflowRecord(
-                        workflow=workflow_name or "workflow",
-                        timestamp=datetime.now(timezone.utc).isoformat(),
-                        summary=parsed.get("summary", ""),
-                        key_findings=parsed.get("key_findings", []),
-                        open_issues=parsed.get("open_issues", []),
-                        resolved_issues=parsed.get("resolved_issues", []),
-                    )
-                    patient_context.add_record(record)
-                    patient_context.save()
-
                     substrate = WikiSubstrateAgent(self.backend, self.model)
                     _, updates = substrate.extract_updates(
                         wiki_content=self.wiki,
