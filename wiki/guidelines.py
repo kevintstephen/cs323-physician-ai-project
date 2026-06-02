@@ -5,7 +5,7 @@ attach their personal notes and interpretations to them in the wiki.
 
 import re
 from pathlib import Path
-from wiki.loader import parse_wiki_sections, get_wiki_file_content, save_wiki_file_content, append_to_markdown, generate_id
+from wiki.loader import parse_wiki_sections, get_wiki_file_content, save_wiki_file_content, append_to_markdown, generate_id, today_str, ADDED_KEY
 from tools.pubmed import PubMedClient
 
 
@@ -82,25 +82,30 @@ def save_guideline(category: str, topic: str, text: str, attributes: dict, docto
     content = get_wiki_file_content(doctor_id, "guidelines.md")
     sections = parse_wiki_sections(content)
     
+    # New guidelines are stamped with the date they enter the wiki; updates to an existing
+    # guideline keep its original Added date.
+    new_attributes = dict(attributes)
+    new_attributes.setdefault(ADDED_KEY, today_str())
+
     # 1. Check if it already exists
     text_clean = re.sub(r"^\[ID:\s*[^\]]+\]\s*", "", text).lower().strip()
     for s in sections:
         if s['category'].lower() == category.lower() and s['topic'].lower() == topic.lower():
             for r in s['rules']:
                 if re.sub(r"^\[ID:\s*[^\]]+\]\s*", "", r['text']).lower().strip() == text_clean:
-                    # Update existing attributes
+                    # Update existing attributes (do not reset the original Added date)
                     r['attributes'].update(attributes)
                     break
             else:
                 # Add to existing topic
-                s['rules'].append({"text": text, "attributes": attributes})
+                s['rules'].append({"text": text, "attributes": new_attributes})
             break
     else:
         # Add new section
         sections.append({
             "category": category,
             "topic": topic,
-            "rules": [{"text": text, "attributes": attributes}]
+            "rules": [{"text": text, "attributes": new_attributes}]
         })
 
     # 2. Reconstruct markdown

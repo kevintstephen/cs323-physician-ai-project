@@ -2,14 +2,26 @@ import os
 import re
 import json
 import hashlib
+from datetime import date
 from pathlib import Path
 
 
 WIKI_DIR = Path(__file__).parent
 
+# Attribute used to record when a rule was first added to the wiki, so the physician can
+# see how old a reference is when revisiting it later.
+ADDED_KEY = "Added"
+
+
+def today_str() -> str:
+    """Today's date as YYYY-MM-DD for stamping new wiki entries."""
+    return date.today().isoformat()
+
 
 def generate_id(category: str, topic: str, rule_text: str) -> str:
     """Generates a stable, deterministic ID for a wiki rule."""
+    # Note: only category/topic/rule_text feed the ID — attributes like the Added date do
+    # not, so dating an entry never changes its citation ID.
     text = f"{category}:{topic}:{rule_text}".strip().lower()
     return hashlib.md5(text.encode()).hexdigest()[:6]
 
@@ -170,8 +182,11 @@ def append_to_markdown(file_path: Path, new_data: list[dict]):
         formatted_rules = []
         for r in rules:
             if isinstance(r, dict):
+                # Stamp the date this rule is added to the wiki (preserve any existing one).
+                attrs = dict(r.get('attributes', {}))
+                attrs.setdefault(ADDED_KEY, today_str())
                 formatted_rules.append(f"- {r['text']}")
-                for key, val in r.get('attributes', {}).items():
+                for key, val in attrs.items():
                     formatted_rules.append(f"  - {key}: {val}")
             else:
                 formatted_rules.append(f"- {r}")

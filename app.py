@@ -13,6 +13,7 @@ import os
 import re
 import json
 import streamlit as st
+from datetime import date
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -20,7 +21,7 @@ from tools.epic import EpicClient
 from wiki.loader import (
     load_wiki, get_pending_updates, remove_pending_update,
     update_wiki, get_wiki_file_content, save_wiki_file_content,
-    get_wiki_insight, parse_wiki_sections, generate_id
+    get_wiki_insight, parse_wiki_sections, generate_id, ADDED_KEY
 )
 from wiki.guidelines import search_pubmed, save_guideline, search_guidelines, delete_guideline
 from llm import AnthropicBackend, GeminiBackend
@@ -547,6 +548,7 @@ def _render_citation_detail(insight: dict, insight_id: str, doctor_id: str = "de
     if attrs.get("URL"): st.markdown(f"[View source]({attrs['URL']})")
     if attrs.get("Physician Notes"): st.markdown(f"**My Interpretation:** {attrs['Physician Notes']}")
     if attrs.get("Rationale"): st.markdown(f"**Rationale:** {attrs['Rationale']}")
+    if attrs.get(ADDED_KEY): st.caption(_format_added(attrs[ADDED_KEY]))
     _render_related_literature(insight, insight_id, doctor_id)
 
 
@@ -657,6 +659,26 @@ def _render_decision_badge(decision: str):
         st.info("🔎 Under review")
 
 
+def _format_added(date_str: str) -> str:
+    """Formats an Added date with a relative age so the physician sees how old a reference is."""
+    try:
+        d = date.fromisoformat(date_str.strip())
+    except Exception:
+        return f"🗓 Added {date_str}"
+    days = (date.today() - d).days
+    if days <= 0:
+        age = "today"
+    elif days < 31:
+        age = f"{days} day{'s' if days != 1 else ''} ago"
+    elif days < 365:
+        months = days // 30
+        age = f"{months} mo ago"
+    else:
+        years = days // 365
+        age = f"{years} yr ago"
+    return f"🗓 Added {d.isoformat()} · {age}"
+
+
 def render_guidelines_repository(doctor_id: str, search_query: str, col_filter):
     """
     Repository view of saved clinical guidelines & literature (guidelines.md).
@@ -706,6 +728,8 @@ def render_guidelines_repository(doctor_id: str, search_query: str, col_filter):
                     st.markdown(f"**My Interpretation:** {attrs['Physician Notes']}")
                 if attrs.get("Rationale"):
                     st.markdown(f"**Rationale:** {attrs['Rationale']}")
+                if attrs.get(ADDED_KEY):
+                    st.caption(_format_added(attrs[ADDED_KEY]))
 
                 with st.expander("✏️ Edit interpretation", expanded=False):
                     cur = (attrs.get("Decision") or "Under review").strip()
