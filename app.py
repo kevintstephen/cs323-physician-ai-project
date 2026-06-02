@@ -381,20 +381,27 @@ if "active_citation" not in st.session_state:
 
 _CACHE_DIR = Path("context/records")
 
-def _save_workflow_cache(patient_id: str, label: str, workflow_name: str, outputs: dict) -> None:
-    _CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    path = _CACHE_DIR / f"{patient_id}_workflow_cache.json"
-    path.write_text(json.dumps({"label": label, "workflow_name": workflow_name, "outputs": outputs}, indent=2))
+# Every session_state key that makes up a patient's in-progress workflow / "Ready for
+# Review" UI. Cleared (along with on-disk artifacts) by the sidebar reset button.
+_WORKFLOW_RESET_KEYS = [
+    "active_workflow", "workflow_outputs", "workflow_complete",
+    "prescription_drafts", "approved_orders", "rx_sent_to_epic", "labs_sent_to_epic",
+    "note_saved", "note_emailed", "show_rx_dialog", "show_labs_dialog", "show_notes_dialog",
+    "episode_wiki_saved",
+    "show_checkin", "checkin_result", "checkin_file_key", "checkin_sample_loaded",
+    "ci_meds_sent", "ci_labs_sent", "ci_updates_saved",
+    "show_ci_meds", "show_ci_labs", "show_ci_updates",
+]
 
-def _load_workflow_cache(patient_id: str) -> tuple:
-    path = _CACHE_DIR / f"{patient_id}_workflow_cache.json"
-    if not path.exists():
-        return None, None, {}
-    try:
-        data = json.loads(path.read_text())
-        return data.get("label"), data.get("workflow_name"), data.get("outputs", {})
-    except Exception:
-        return None, None, {}
+def _reset_workflow_state(patient_id: str) -> None:
+    """Clears all in-session workflow UI state and the patient's generated artifacts so the
+    "Ready for Review" section is fully dismissed on reset."""
+    for _k in _WORKFLOW_RESET_KEYS:
+        st.session_state.pop(_k, None)
+    for _suffix in ("_workflow_cache.json", "_note.md"):
+        _p = _CACHE_DIR / f"{patient_id}{_suffix}"
+        if _p.exists():
+            _p.unlink()
 
 # ---------------------------------------------------------------------------
 # Shared Utilities
@@ -617,6 +624,7 @@ with st.sidebar:
             st.divider()
             if st.button("Reset patient context", type="secondary"):
                 PatientContext.clear(patient_id)
+                _reset_workflow_state(patient_id)
                 st.rerun()
         st.divider()
         st.markdown("**Demo**")
@@ -992,7 +1000,6 @@ def render_patient_workflows():
                 if output: st.session_state["workflow_outputs"][step_name] = output.content
             status.update(label=f"{label} complete", state="complete")
         st.session_state["workflow_complete"] = True
-        _save_workflow_cache(patient_id, label, workflow_name, st.session_state["workflow_outputs"])
         st.rerun()
 
     if btn_col1.button("🏥 Admit Patient", use_container_width=True): run_wf("Admission", "admission", ADMISSION_STEPS, lambda: epic.build_admission_session(patient_id))
@@ -1002,9 +1009,8 @@ def render_patient_workflows():
             for _k in ("checkin_result", "checkin_file_key", "checkin_sample_loaded", "ci_meds_sent", "ci_labs_sent", "ci_updates_saved", "show_ci_meds", "show_ci_labs", "show_ci_updates"): st.session_state.pop(_k, None)
         st.rerun()
     if btn_col3.button("🚪 Discharge Patient", use_container_width=True): run_wf("Discharge", "discharge", DISCHARGE_STEPS, lambda: epic.get_discharge_session(patient_id))
-    if not st.session_state.get("workflow_complete"):
-        cached_label, cached_wf, cached_outputs = _load_workflow_cache(patient_id)
-        if cached_outputs: st.session_state["workflow_complete"], st.session_state["active_workflow"], st.session_state["workflow_outputs"] = True, cached_label, cached_outputs
+    # "Ready for Review" is shown only once the physician has actually started (and finished)
+    # a workflow this session — workflow_complete is set solely by run_wf, never auto-restored.
     if st.session_state.get("workflow_complete"):
         outputs, label, pending_all = st.session_state["workflow_outputs"], st.session_state.get("active_workflow"), get_pending_updates("default")
         st.divider()
