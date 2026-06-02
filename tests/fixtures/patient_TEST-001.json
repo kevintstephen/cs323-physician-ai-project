@@ -1,0 +1,87 @@
+{
+  "patient_id": "TEST-001",
+  "name": "John Smith",
+  "age": 67,
+  "sex": "M",
+  "insurance": "Medicare Part A and Part B; supplemental Medigap Plan G",
+  "chief_complaint": "Shortness of breath, worsening over 3 days",
+  "vitals": {
+    "heart_rate": 98,
+    "blood_pressure": "148/92",
+    "respiratory_rate": 22,
+    "o2_saturation": 91,
+    "temperature_celsius": 37.1,
+    "weight_kg": 94
+  },
+  "labs": {
+    "sodium": 138,
+    "potassium": 4.2,
+    "creatinine": 1.8,
+    "bun": 32,
+    "glucose": 112,
+    "bnp": 1240,
+    "troponin_i": 0.04,
+    "wbc": 8200,
+    "hemoglobin": 11.2,
+    "hematocrit": 33.6,
+    "platelets": 214000,
+    "inr": 1.1
+  },
+  "pmh": [
+    "Congestive heart failure (EF 30-35%)",
+    "Coronary artery disease",
+    "Hypertension",
+    "CKD stage 3 (baseline creatinine 1.5-1.7)",
+    "Type 2 diabetes mellitus"
+  ],
+  "current_medications": [
+    "Lisinopril 10mg daily",
+    "Carvedilol 12.5mg twice daily",
+    "Furosemide 40mg daily",
+    "Aspirin 81mg daily",
+    "Atorvastatin 40mg nightly",
+    "Metformin 500mg twice daily"
+  ],
+  "allergies": [
+    {"drug": "Penicillin", "reaction": "rash"},
+    {"drug": "Sulfa", "reaction": "hives"}
+  ],
+  "ed_assessment": "67-year-old male with history of CHF presenting with 3 days of worsening shortness of breath and bilateral lower extremity edema. Patient reports he has been compliant with his medications. Exam notable for elevated JVP, bilateral crackles at lung bases, and 2+ bilateral pitting edema to the knees. CXR shows pulmonary vascular congestion and small bilateral pleural effusions. ECG with left bundle branch block (known prior). Concern for acute CHF exacerbation. Starting IV Lasix 80mg. Cardiology aware. Will admit to medicine for diuresis and optimization.",
+  "handoff_notes": "67M CHF exac, hemodynamically stable. Getting IV diuresis — check UOP q4h. BMP in AM. Echo ordered (no prior here). Cardiology following. Watch creatinine — baseline 1.5-1.7, currently 1.8. Patient is full code.",
+  "baseline_functional_status": "Prior to this admission: able to climb one flight of stairs with mild dyspnea, walks approximately one block before stopping due to shortness of breath. Sleeps with two pillows (orthopnea x 2 years). Lives alone, manages all ADLs independently. Retired school teacher.",
+  "imaging": [
+    {
+      "type": "CXR",
+      "timestamp": "2026-05-07T21:45:00",
+      "indication": "Shortness of breath — evaluate for pulmonary edema",
+      "findings": "Cardiomegaly (cardiothoracic ratio 0.58). Pulmonary vascular congestion with bilateral interstitial opacities consistent with pulmonary edema. Small bilateral pleural effusions. No focal consolidation to suggest pneumonia. No pneumothorax.",
+      "impression": "Acute pulmonary edema superimposed on cardiomegaly with small bilateral pleural effusions. Consistent with decompensated heart failure."
+    }
+  ],
+  "prior_hospitalizations": [
+    {
+      "date": "2025-11-12",
+      "reason": "CHF exacerbation",
+      "length_of_stay_days": 4,
+      "treatment": "IV diuresis (Lasix 80mg IV), discharged on Furosemide 40mg daily. Echocardiogram showed EF 30-35%, no change from prior.",
+      "discharge_weight_kg": 89,
+      "transitional_issues": "PCP to follow up BMP in 1 week to monitor creatinine and potassium on diuretic. Cardiology outpatient follow-up scheduled."
+    },
+    {
+      "date": "2025-05-03",
+      "reason": "CHF exacerbation",
+      "length_of_stay_days": 6,
+      "treatment": "IV diuresis. Cardiac catheterization showed severe 3-vessel CAD — patient declined revascularization, continued on medical management. Guideline-directed medical therapy optimized.",
+      "discharge_weight_kg": 87,
+      "transitional_issues": "Cardiology to re-discuss revascularization at 3-month follow-up. Patient counseled on daily weights and low-sodium diet."
+    },
+    {
+      "date": "2024-09-18",
+      "reason": "Pneumonia",
+      "length_of_stay_days": 5,
+      "treatment": "Antibiotics (ceftriaxone + azithromycin). Incidentally noted worsening EF on echo during admission.",
+      "discharge_weight_kg": 86,
+      "transitional_issues": "PCP to follow up chest X-ray at 6 weeks to confirm pneumonia resolution."
+    }
+  ]
+}

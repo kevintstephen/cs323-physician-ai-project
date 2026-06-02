@@ -50,10 +50,18 @@ class EpicClient:
     # Admission workflow methods
     # -----------------------------------------------------------------------
 
+    def _get_patient_fixture(self, patient_id: str) -> dict:
+        """Loads the per-patient fixture file, falling back to sample_patient.json."""
+        per_patient = f"patient_{patient_id}.json"
+        fixture_path = _FIXTURES_DIR / per_patient
+        if fixture_path.exists():
+            return self._load_fixture(per_patient)
+        return self._load_fixture("sample_patient.json")
+
     def get_patient(self, patient_id: str) -> dict:
         """Patient demographics, current vitals, labs, medications, allergies."""
         if self._stub_mode:
-            return self._load_fixture("sample_patient.json")
+            return self._get_patient_fixture(patient_id)
         # TODO: GET /Patient/{patient_id} + GET /Observation (current encounter)
         raise NotImplementedError("Epic API integration not yet implemented")
 
@@ -67,28 +75,28 @@ class EpicClient:
     def get_labs(self, patient_id: str, encounter_id: str = "") -> dict:
         """Current lab results for the active encounter."""
         if self._stub_mode:
-            return self._load_fixture("sample_patient.json").get("labs", {})
+            return self._get_patient_fixture(patient_id).get("labs", {})
         # TODO: GET /Observation?patient={patient_id}&category=laboratory&encounter={encounter_id}
         raise NotImplementedError
 
     def get_prior_hospitalizations(self, patient_id: str) -> list[dict]:
         """Summarized prior hospitalization records."""
         if self._stub_mode:
-            return self._load_fixture("sample_patient.json").get("prior_hospitalizations", [])
+            return self._get_patient_fixture(patient_id).get("prior_hospitalizations", [])
         # TODO: GET /Encounter?patient={patient_id}&class=IMP&_sort=-date
         raise NotImplementedError
 
     def get_ed_notes(self, patient_id: str, encounter_id: str = "") -> str:
         """ED physician pass-off notes for this encounter."""
         if self._stub_mode:
-            return self._load_fixture("sample_patient.json").get("ed_assessment", "")
+            return self._get_patient_fixture(patient_id).get("ed_assessment", "")
         # TODO: GET /DocumentReference?patient={patient_id}&type=34878-9 (ED note LOINC)
         raise NotImplementedError
 
     def get_handoff_notes(self, patient_id: str) -> str:
         """Overnight nursing/resident handoff from Epic's handoff notepad."""
         if self._stub_mode:
-            return self._load_fixture("sample_patient.json").get("handoff_notes", "")
+            return self._get_patient_fixture(patient_id).get("handoff_notes", "")
         # TODO: GET /DocumentReference?patient={patient_id}&type=handoff
         raise NotImplementedError
 

@@ -1,0 +1,82 @@
+{
+  "patient_id": "TEST-003",
+  "name": "James Washington",
+  "age": 72,
+  "sex": "M",
+  "insurance": "Medicare Advantage (Humana HMO)",
+  "chief_complaint": "Increased dyspnea and productive cough for 4 days",
+  "vitals": {
+    "heart_rate": 102,
+    "blood_pressure": "138/84",
+    "respiratory_rate": 26,
+    "o2_saturation": 84,
+    "temperature_celsius": 38.3,
+    "weight_kg": 74
+  },
+  "labs": {
+    "sodium": 140,
+    "potassium": 3.9,
+    "creatinine": 1.2,
+    "bun": 22,
+    "glucose": 104,
+    "bicarbonate": 32,
+    "wbc": 13200,
+    "hemoglobin": 13.8,
+    "hematocrit": 41.2,
+    "platelets": 188000,
+    "inr": 1.0,
+    "pro_bnp": 280,
+    "procalcitonin": 0.38
+  },
+  "pmh": [
+    "COPD, GOLD stage 3 (severe) — on home oxygen 2L/min",
+    "Obstructive sleep apnea on CPAP (8 cmH2O)",
+    "CKD stage 2 (baseline creatinine 1.0-1.2)",
+    "Former smoker — 45 pack-years, quit 8 years ago",
+    "Atrial fibrillation (rate-controlled, not on anticoagulation — prior GI bleed)",
+    "Gout"
+  ],
+  "current_medications": [
+    "Tiotropium 18mcg inhaled daily",
+    "Salmeterol/fluticasone 50/500mcg inhaled twice daily",
+    "Albuterol 2.5mg nebulized PRN",
+    "Azithromycin 250mg daily (macrolide prophylaxis for COPD exacerbations)",
+    "Metoprolol tartrate 25mg twice daily",
+    "Allopurinol 100mg daily",
+    "Home oxygen 2L/min via nasal cannula"
+  ],
+  "allergies": [
+    {"drug": "Aspirin", "reaction": "GI bleed (upper GI bleed 2022 — attributed to aspirin use)"},
+    {"drug": "Amiodarone", "reaction": "pulmonary toxicity"}
+  ],
+  "ed_assessment": "72-year-old male with severe COPD on home O2 2L presenting with 4 days of worsening dyspnea and productive yellow-green sputum. Reports running out of albuterol 3 days ago. Denies fever at home. Exam: accessory muscle use, prolonged expiratory phase, diffuse bilateral expiratory wheezing, no crackles. O2 sat 84% on room air, improved to 90% on 2L (his home flow rate), 93% on 4L. CXR shows hyperinflation with no new consolidation, no pneumothorax. ABG on 2L: pH 7.34, pCO2 58 (elevated from baseline ~52), pO2 62, bicarb 32. Acute-on-chronic hypercapnic respiratory failure consistent with COPD exacerbation. Starting IV methylprednisolone, ipratropium and albuterol nebulizers q4h, and doxycycline for presumed infectious exacerbation. Pulmonology paged. Monitor closely for worsening — low threshold for BiPAP if pCO2 continues to rise.",
+  "handoff_notes": "72M severe COPD exac, acute-on-chronic hypercapnic failure. On 4L NC — target O2 sat 88-92% only (hypercapnic driver). Steroids started. On doxycycline — sputum culture pending. Serial ABGs ordered. On telemetry for afib monitoring. NOT a BiPAP candidate per patient preference (completed POLST — comfort-focused measures, no intubation). Pulmonology to see in AM. Family meeting scheduled for tomorrow.",
+  "baseline_functional_status": "Prior to this admission: severely limited — unable to walk more than 20 feet without stopping. Dependent on home O2 24h/day. Uses a rollator walker. Lives with son. Unable to climb stairs. Sleeps in recliner. Prior hospitalization for COPD exacerbation 5 months ago required 6-day stay with BiPAP. POLST on file: DNI, trial of BiPAP acceptable but patient has been reconsidering.",
+  "imaging": [
+    {
+      "type": "CXR",
+      "timestamp": "2026-05-28T14:22:00",
+      "indication": "COPD exacerbation — evaluate for consolidation, pneumothorax",
+      "findings": "Marked bilateral hyperinflation. Flattened hemidiaphragms. No focal consolidation. No pleural effusion. No pneumothorax. Mild cardiomegaly. Findings consistent with known severe COPD.",
+      "impression": "Severe COPD without acute infiltrate or pneumothorax. No radiographic evidence of pneumonia."
+    }
+  ],
+  "prior_hospitalizations": [
+    {
+      "date": "2025-12-10",
+      "reason": "COPD exacerbation",
+      "length_of_stay_days": 6,
+      "treatment": "IV steroids, nebulizers, doxycycline, non-invasive BiPAP overnight × 2 nights. Discharged home on prednisone taper, doxycycline course, and home oxygen uptitrated to 2L.",
+      "discharge_weight_kg": 73,
+      "transitional_issues": "Pulmonology follow-up in 2 weeks. Discussed pulmonary rehab enrollment — patient willing. POLST completed this admission."
+    },
+    {
+      "date": "2025-06-03",
+      "reason": "COPD exacerbation with community-acquired pneumonia",
+      "length_of_stay_days": 8,
+      "treatment": "IV ceftriaxone, azithromycin, steroids. Required BiPAP for 3 days. Started on macrolide prophylaxis at discharge.",
+      "discharge_weight_kg": 72,
+      "transitional_issues": "Repeat CXR in 6 weeks to confirm pneumonia resolution. Goals of care discussion deferred to outpatient setting."
+    }
+  ]
+}

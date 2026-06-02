@@ -1,3 +1,79 @@
 [
-  
+  {
+    "type": "protocol",
+    "category": "Medications",
+    "header": "Inpatient PA flag interpretation",
+    "content": "- Treat prior authorization flags on inpatient-only medications (e.g., SQ heparin, insulin lispro) as formulary-database artifacts rather than true coverage barriers, since inpatient meds are bundled under Part A DRG payment; document this explicitly in prescription notes.\n  - Rationale: PA flags from formulary tools generate false positives for inpatient meds covered under bundled Part A payment, creating workflow noise; outpatient Part D PA only applies if medication is continued at discharge.\n- If discharge on insulin is anticipated, preemptively switch to regular insulin sliding scale (Tier 1 formulary) rather than lispro to avoid Part D PA delay at discharge.\n  - Rationale: Lispro typically requires Part D PA or step therapy outpatient; early formulary substitution prevents discharge delay.\n  - Evidence: [WikiID: 435009]",
+    "rules": [
+      {
+        "text": "Treat prior authorization flags on inpatient-only medications (e.g., SQ heparin, insulin lispro) as formulary-database artifacts rather than true coverage barriers, since inpatient meds are bundled under Part A DRG payment; document this explicitly in prescription notes.",
+        "attributes": {
+          "Rationale": "PA flags from formulary tools generate false positives for inpatient meds covered under bundled Part A payment, creating workflow noise; outpatient Part D PA only applies if medication is continued at discharge."
+        }
+      },
+      {
+        "text": "If discharge on insulin is anticipated, preemptively switch to regular insulin sliding scale (Tier 1 formulary) rather than lispro to avoid Part D PA delay at discharge.",
+        "attributes": {
+          "Rationale": "Lispro typically requires Part D PA or step therapy outpatient; early formulary substitution prevents discharge delay.",
+          "Evidence": "[WikiID: 435009]"
+        }
+      }
+    ]
+  },
+  {
+    "type": "protocol",
+    "category": "Diseases/Issues",
+    "header": "HFrEF - beta-blocker uptitration deferral",
+    "content": "- When patient is admitted on submaximal carvedilol dose (e.g., 12.5 mg BID, below target 25 mg BID for HFrEF), explicitly defer up-titration to outpatient cardiology once euvolemic and stable rather than initiating inpatient titration during active diuresis.\n  - Rationale: Inpatient beta-blocker uptitration during active decongestion risks low-output state and hemodynamic instability; outpatient titration with stable volume status is safer.",
+    "rules": [
+      {
+        "text": "When patient is admitted on submaximal carvedilol dose (e.g., 12.5 mg BID, below target 25 mg BID for HFrEF), explicitly defer up-titration to outpatient cardiology once euvolemic and stable rather than initiating inpatient titration during active diuresis.",
+        "attributes": {
+          "Rationale": "Inpatient beta-blocker uptitration during active decongestion risks low-output state and hemodynamic instability; outpatient titration with stable volume status is safer."
+        }
+      }
+    ]
+  },
+  {
+    "type": "protocol",
+    "category": "Diseases/Issues",
+    "header": "ASA + prophylactic heparin co-administration",
+    "content": "- When continuing home aspirin alongside prophylactic SQ heparin for VTE prophylaxis, confirm no active bleeding before sign-off; the combination is acceptable at prophylactic heparin dosing but warrants explicit documented assessment.\n  - Rationale: Combined antiplatelet + anticoagulant therapy modestly elevates bleeding risk; explicit pre-sign-off check prevents oversight in patients with CAD on chronic ASA.",
+    "rules": [
+      {
+        "text": "When continuing home aspirin alongside prophylactic SQ heparin for VTE prophylaxis, confirm no active bleeding before sign-off; the combination is acceptable at prophylactic heparin dosing but warrants explicit documented assessment.",
+        "attributes": {
+          "Rationale": "Combined antiplatelet + anticoagulant therapy modestly elevates bleeding risk; explicit pre-sign-off check prevents oversight in patients with CAD on chronic ASA."
+        }
+      }
+    ]
+  },
+  {
+    "type": "preference",
+    "category": "Documentation",
+    "header": "Prescription PA notes",
+    "content": "- When a formulary tool flags PA on an inpatient-only medication, explicitly annotate in pa_notes that the flag is a 'false positive' due to Part A DRG bundling, and distinguish from any genuine outpatient Part D PA risk at discharge.\n  - Rationale: Disambiguates spurious PA flags from real discharge-time coverage barriers and prevents downstream workflow confusion.",
+    "rules": [
+      {
+        "text": "When a formulary tool flags PA on an inpatient-only medication, explicitly annotate in pa_notes that the flag is a 'false positive' due to Part A DRG bundling, and distinguish from any genuine outpatient Part D PA risk at discharge.",
+        "attributes": {
+          "Rationale": "Disambiguates spurious PA flags from real discharge-time coverage barriers and prevents downstream workflow confusion."
+        }
+      }
+    ]
+  },
+  {
+    "type": "preference",
+    "category": "Documentation",
+    "header": "Drug info summary content",
+    "content": "- Prescription drug_info_summary should explicitly enumerate drug-drug and drug-disease interactions specific to the current patient (e.g., carvedilol masking hypoglycemia in T2DM, furosemide-induced hypokalemia worsened by insulin, lisinopril potentiating hypotension with diuresis) rather than generic class warnings.\n  - Rationale: Patient-specific interaction surfacing is more actionable for the care team than generic class-level warnings.",
+    "rules": [
+      {
+        "text": "Prescription drug_info_summary should explicitly enumerate drug-drug and drug-disease interactions specific to the current patient (e.g., carvedilol masking hypoglycemia in T2DM, furosemide-induced hypokalemia worsened by insulin, lisinopril potentiating hypotension with diuresis) rather than generic class warnings.",
+        "attributes": {
+          "Rationale": "Patient-specific interaction surfacing is more actionable for the care team than generic class-level warnings."
+        }
+      }
+    ]
+  }
 ]

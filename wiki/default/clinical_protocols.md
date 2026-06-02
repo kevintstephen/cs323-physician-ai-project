@@ -33,6 +33,8 @@
 - Consider formal cardiology consult for GDMT gaps (no ARNI/MRA/SGLT2i) or recurrent admissions (≥3 in 18 months), even if EF is known and patient is hemodynamically stable
 - ACEi/ARB hold parameters during diuresis: SBP <100, Cr rise >30% from baseline, or K+ >5.0
 - Beta-blocker hold parameters: SBP <90, HR <55, or signs of low-output state; reduce rather than discontinue when possible
+- When transitioning IV → PO loop diuretic, consolidate to once-daily outpatient regimen where possible for adherence; document rationale for any BID outpatient regimen
+- For patients on uptitrated loop diuretic + ACEi + new KCl at discharge, mandatory PCP BMP within 7 days (not 7-14)
 
 ### Sepsis / bacteremia
 - Blood cultures x2 before antibiotics
@@ -87,6 +89,24 @@
 - PCP follow-up within 1 week for BMP (K+, Cr) given diuretic intensification, especially in CKD
 - Consider heart failure clinic / CHF disease management enrollment if available
 - For recurrent CHF admissions, consider palliative care referral and revisit goals of care
+### New structural valve findings on inpatient TTE
+- When inpatient TTE reveals new moderate-or-greater MR with leaflet prolapse, document as a new structural diagnosis on the discharge summary and arrange repeat TTE in 3 months once euvolemic
+- New mild-or-greater pulmonary hypertension (RVSP ≥40 mmHg) identified on inpatient TTE warrants outpatient cardiology surveillance and repeat imaging in 3 months
+- Structural valve findings discovered during ADHF admission should trigger formal cardiology consult (not 'aware') and explicit structural valve clinic referral
+### Sepsis fluid resuscitation
+- Limit initial fluid bolus to 20mL/kg in patients with concomitant HF or ESRD.
+  - Rationale: Standard 30mL/kg bolus carries a high risk of volume overload in susceptible populations [WikiID: d41bc0].
+  - Evidence: Surviving Sepsis Campaign 2021 [WikiID: d41bc0]
+### Heart failure exacerbation - anemia workup
+- In patients with HFrEF and anemia (Hgb < 12 g/dL), routinely order iron studies (ferritin, TSAT) and TSH as part of the precipitant/comorbidity workup.
+  - Rationale: Anemia and thyroid dysfunction may contribute to symptoms or exacerbate HFrEF; evaluating these factors aids in comprehensive management and identifying potential triggers for recurrent admissions.
+  - Evidence: General clinical practice for recurrent HF decompensation [WikiID: b9f1b7, WikiID: 6bddc0].
+### Heart failure exacerbation - target dry weight setting
+- When dry-weight creep is observed across admissions, set the new target dry weight below the most recent discharge weight (e.g., 3-4 kg below) rather than anchoring to the last documented dry weight.
+  - Rationale: Anchoring to a creeping dry weight perpetuates inadequate decongestion; using a lower target accounts for likely under-diuresis on prior admissions.
+### Loop diuretic safety in sulfa allergy
+- When a patient with documented sulfa allergy has already received furosemide in the ED without a cross-reactivity check, do not defer the safety check — verify with pharmacy/attending BEFORE the next scheduled dose, and switch to ethacrynic acid if true reaction history.
+  - Rationale: Continuing furosemide pending later review exposes the patient to repeated allergen doses; cross-reactivity must be resolved pre-dose, not flagged for later.
 
 ## Labs/Blood Work
 ### Sodium abnormalities
@@ -103,12 +123,24 @@
 - BUN/Cr ratio >20 suggests prerenal/cardiorenal component layered on CKD
 - If creatinine continues to rise during diuresis, reassess volume status before slowing diuresis — cardiorenal often improves with decongestion
 - Verify baseline creatinine from prior records to guide diuresis tolerance threshold
+### Hypokalemia during loop diuresis
+- Initiate KCl supplementation when K+ drops to low-normal (≤3.5) during active loop diuresis, especially with concurrent uptitration
+- Continue KCl at discharge when discharging on higher-dose loop diuretic than home regimen; pair with 1-week post-discharge BMP
+- Defer MRA initiation while patient requires exogenous KCl supplementation — reassess once K+ stable off supplementation or per cardiology
+### BMP monitoring post-GDMT
+- Check BMP at 1 week post-initiation of ARNI or MRA in HFrEF patients.
+  - Rationale: High risk of hyperkalemia and AKI in patients with baseline CKD [WikiID: 2f6961].
+  - Evidence: 2022 AHA/ACC/HFSA Guideline [WikiID: 2f6961]
 
 ## Imaging
 ### Incidental imaging findings
 - Any incidental finding requiring follow-up must appear in transitional issues
 - Specify the follow-up modality, timeframe, and responsible provider
 - Do not leave incidental findings unaddressed
+### Pulmonary nodule surveillance (Fleischner)
+- Solid pulmonary nodules 4-6 mm in patients >35 years with no high-risk features: CT chest without contrast in 3 months per Fleischner Society guidance
+- Compare any newly identified nodule against the most recent prior chest imaging to establish whether truly new
+- Assign explicit responsible provider (typically PCP) to order surveillance CT and document timeframe anchored to date of index imaging
 
 ## Medications
 ### Anticoagulation
@@ -140,6 +172,19 @@
 - Optimize GDMT during admission: ARNI, MRA, SGLT2i
 - ARNI (sacubitril/valsartan) often requires prior authorization under Medicare Part D — verify formulary early to avoid discharge delay
 - SGLT2i coverage variable under Part D — may require PA; verify before discharge
+### Sulfa allergy - diuretic transition
+- For patients with a documented severe sulfa allergy (hives/anaphylaxis), perform a documented safety check for potential cross-reactivity with sulfonamide-derivative diuretics (e.g., Furosemide) before administration.
+  - Rationale: Standardization of safety screening to prevent potential allergic reactions.
+  - Interpretation: If cross-reactivity is suspected, evaluate for alternative non-sulfonamide loop diuretics like ethacrynic acid [WikiID: 410372].
+### Medication adherence verification
+- For recurrent admissions where patient reports strict adherence, verify true adherence with pill counts and pharmacy refill history rather than relying on self-report alone.
+  - Rationale: Self-reported adherence is unreliable in recurrent decompensations; objective verification is needed before attributing precipitant to non-adherence vs. other causes.
+### Beta-blockers in diabetics
+- When carvedilol or other beta-blockers are continued in T2DM patients on sliding-scale insulin, instruct nursing to monitor glucose objectively (fingersticks QID) rather than relying on adrenergic hypoglycemia symptoms.
+  - Rationale: Beta-blockers mask adrenergic symptoms of hypoglycemia, increasing risk of unrecognized hypoglycemic events.
+### ARNI transition from ACEi
+- If switching from ACEi to ARNI per cardiology recommendation, require a 36-hour washout period and initiate Part D prior authorization workflow at least 48h before anticipated discharge.
+  - Rationale: Concomitant ACEi/ARNI use causes angioedema risk; ARNI also has high PA likelihood under Medicare Part D and is a common cause of discharge delay.
 
 ## Cardiology
 
@@ -150,6 +195,10 @@
 ### ECG interpretation with LBBB
 - When LBBB is present, characterize the underlying rhythm (sinus vs AFib vs paced) and compare to prior ECG — occult AFib changes anticoagulation strategy
 - LBBB masks ischemic ECG changes — do not rely on ECG alone to exclude ACS
+### Atrial Fibrillation
+- For symptomatic AFib in patients >80 years old, defer rhythm control preference to cardiology or accept rate control as an alternative.
+  - Rationale: Early rhythm control is preferred generally, but clinical nuance is required for the elderly to balance symptom control vs. procedure risk [WikiID: c94385].
+  - Evidence: 2023 ACC/AHA AFib Guideline [WikiID: c94385]
 
 ## Documentation
 
@@ -177,6 +226,9 @@
 ### Follow-up appointment verification
 - Cardiology and specialty follow-up appointments must be scheduled (booked) prior to discharge, not just referred
 - Verify home health agency availability and start date prior to discharge
+### Discharge medication dose verification
+- Reconcile inpatient diuretic dosing (e.g., BID inpatient regimen) against discharge prescription to avoid carry-over dosing errors; explicitly state the consolidated outpatient dose and rationale
+- Flag any discrepancy between Hospital Course narrative and Discharge Medications list as a critical safety issue requiring physician resolution before sign-off
 
 ## Transitional Issues
 

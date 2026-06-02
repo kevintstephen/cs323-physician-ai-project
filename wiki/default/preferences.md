@@ -24,6 +24,12 @@
 - Mention number of HF admissions in recent timeframe when relevant to device/escalation discussion
 ### ED handoff clarification
 - Always clarify whether ED phrasing such as 'specialty aware' represents a formal consult or a curbside before assuming consultant involvement
+### Patient instructions formatting
+- Patient instructions should use plain-language parenthetical definitions for medical terms (e.g., 'diuretic (a medicine that helps your body pass extra water)')
+- Provide medication list as a table with columns: medication, dose, when to take, what it's for
+- Separate warning signs into 'Go to ER immediately' vs. 'Call doctor within 24 hours' tiers
+- Explicitly instruct patient to leave with booked appointment dates/times rather than just referrals
+- Address caregiver by name (e.g., daughter) and instruct patient to share the discharge paper with them when relevant
 
 ## Documentation
 ### Documentation preferences
@@ -81,6 +87,33 @@
 - Use 🚩 emoji to denote safety flags
 - List both 'Flags' and 'Confirmed safe' items separately
 - Do not perform safety clearance without an actual document to review — explicitly note when content is missing
+### Discharge summary internal consistency
+- Hospital Course narrative and Discharge Medications list must agree on dose and frequency; any discrepancy is a hard stop before sign-off
+- Admission and discharge dates must be cross-checked against prior workflow context (chart review, prior notes) to confirm correct hospitalization
+- Truncated or incomplete sections (e.g., Follow-Up) must be flagged explicitly and completed before sign-off, not silently passed
+### At-a-Glance discharge summary header
+- Lead discharge summary with an 'At a Glance' block: why admitted, key intervention, discharge weight vs. dry weight, critical follow-up, and 'Do not miss' incidental findings
+- 'Do not miss' section should explicitly enumerate new incidental imaging or echo findings with modality and timeframe for follow-up
+### Physician sign-off checklist structure
+- Organize discharge checklist into three tiers: 'Before placing the discharge order', 'Before the patient leaves', and 'Confirm is arranged (can delegate but must verify)'
+- Each checklist item should cite the relevant Wiki ID(s) inline
+- Delegable items must still be explicitly verified by the physician, not assumed complete
+### Safety review structure
+- Safety review should explicitly call out internal document inconsistencies (dose discrepancies, date mismatches, truncated sections) as flags, not just clinical issues
+- When flagging 'consultant aware' language, require confirmation that formal consult was placed and referral is booked
+- Include a count of total flags in the overall assessment line
+### Clinical Documentation Standards
+- In the Assessment & Plan, specify explicit thresholds for downstream actions (e.g., 'start spironolactone when Cr stable and K <5.0') rather than using vague, deferred language.
+  - Rationale: Reduces clinical ambiguity and ensures clear, actionable plan-of-care for the multidisciplinary team [WikiID: cfacb2].
+### Draft completeness check
+- Before sign-off, check that note drafts are not truncated mid-sentence or contain unclosed brackets/sections; flag incomplete drafts explicitly in safety review.
+  - Rationale: Truncated notes may omit safety-critical content (e.g., allergy lists, plan items) and pose medico-legal and clinical risk.
+### Medication list annotations
+- Each home medication in the admission note should be annotated inline with explicit continue/hold/dose-adjust decision AND the specific numerical hold threshold parameters (e.g., 'Hold if SBP <100, Cr >2.0, or K+ >5.0').
+  - Rationale: Explicit numerical thresholds prevent ambiguity for covering clinicians and nursing staff regarding when to hold the next dose.
+### Prescription agent_notes content
+- Prescription agent_notes should include: dose rationale (e.g., 2x home PO for IV loop), explicit hold/escalation triggers with numerical thresholds, discharge transition plan (when to resume home regimen), and PA workflow timing for high-risk agents.
+  - Rationale: Consolidating dose logic, safety thresholds, and discharge planning per-medication reduces handoff errors and discharge delays.
 
 ## Workflow
 ### Workflow preferences
@@ -99,6 +132,9 @@
 - Categorize actions by urgency tiers: now, today, routine
 - Tag each action with type (verify, lab_order, nursing_order, consult, order) and source workflow step
 - Assign explicit owner/responsible provider to each [VERIFY] item
+### Wiki drift audit integrity
+- When wiki drift audits encounter conflicting signals (e.g., 'no wiki loaded' but wiki content visible in context), explicitly flag the discrepancy and request physician confirmation rather than proceeding with a PASS verdict.
+  - Rationale: Defaulting to PASS on ambiguous source state risks missing actual drift; physician must confirm authoritative wiki version.
 
 ## Communication Style
 

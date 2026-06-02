@@ -1,0 +1,57 @@
+{
+  "_comment": "Physician AI — patient intake format. Fill in the fields below and upload via Add Patient.",
+  "name": "Robert Johnson",
+  "age": 61,
+  "sex": "M",
+  "insurance": "Cigna PPO (employer-sponsored)",
+  "chief_complaint": "Crushing chest pain with diaphoresis, onset at rest 90 minutes ago",
+  "vitals": {
+    "heart_rate": 104,
+    "blood_pressure": "162/98",
+    "respiratory_rate": 20,
+    "o2_saturation": 96,
+    "temperature_celsius": 37.0,
+    "weight_kg": 88
+  },
+  "labs": {
+    "sodium": 139,
+    "potassium": 4.3,
+    "creatinine": 1.1,
+    "bun": 18,
+    "glucose": 148,
+    "troponin_i": 1.8,
+    "ck_mb": 22.4,
+    "wbc": 11200,
+    "hemoglobin": 14.1,
+    "hematocrit": 42.3,
+    "platelets": 228000,
+    "inr": 1.0
+  },
+  "past_medical_history": [
+    "Hypertension (on two agents)",
+    "Type 2 diabetes mellitus",
+    "Hyperlipidemia (untreated)",
+    "Former smoker — 20 pack-years, quit 5 years ago"
+  ],
+  "current_medications": [
+    "Amlodipine 10mg daily",
+    "Lisinopril 20mg daily",
+    "Metformin 1000mg twice daily"
+  ],
+  "allergies": [
+    {"drug": "Penicillin", "reaction": "rash"}
+  ],
+  "baseline_functional_status": "Prior to admission: independent with all ADLs. Works full-time as a contractor. Exercises occasionally. Reports increasing exertional dyspnea over the past 2 months but attributed it to deconditioning.",
+  "ed_assessment": "61-year-old male with hypertension and diabetes presenting with 90 minutes of crushing substernal chest pain with radiation to the left arm and jaw, associated diaphoresis and nausea. Onset at rest while watching television. Denies prior similar episodes. ECG: ST elevation 2-3mm in V2-V5, reciprocal changes in inferior leads — consistent with anterior STEMI. Troponin I 1.8 (first draw). Activating cath lab — patient taken for primary PCI. Aspirin 325mg, ticagrelor 180mg, and heparin infusion started. Cardiology at bedside.",
+  "handoff_notes": "61M anterior STEMI s/p primary PCI (LAD stent). Procedure uncomplicated. EF estimated 40-45% on intraprocedural echo (prior unknown). Post-cath: vascular access site intact, pedal pulses intact bilaterally. On aspirin + ticagrelor dual antiplatelet, heparin drip — transition to SQ enoxaparin per cards. Hold metformin 48h post-contrast. Check BMP in AM. Patient and wife aware of diagnosis and plan. Cardiology following closely.",
+  "imaging": [
+    {
+      "type": "ECG",
+      "timestamp": "2026-06-02T09:12:00",
+      "indication": "Chest pain — STEMI evaluation",
+      "findings": "Sinus tachycardia at 104 bpm. ST elevation 2-3mm in V2-V5 with upward convexity. Reciprocal ST depression in II, III, aVF. Q waves developing in V2-V3.",
+      "impression": "Anterior STEMI. Cath lab activated."
+    }
+  ],
+  "prior_hospitalizations": []
+}

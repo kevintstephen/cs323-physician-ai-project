@@ -1,0 +1,79 @@
+{
+  "patient_id": "TEST-004",
+  "name": "Sarah O'Brien",
+  "age": 38,
+  "sex": "F",
+  "insurance": "Aetna HMO (employer-sponsored)",
+  "chief_complaint": "Substernal chest pain with radiation to left arm, onset at rest 6 hours ago",
+  "vitals": {
+    "heart_rate": 94,
+    "blood_pressure": "158/96",
+    "respiratory_rate": 18,
+    "o2_saturation": 99,
+    "temperature_celsius": 36.8,
+    "weight_kg": 70
+  },
+  "labs": {
+    "sodium": 139,
+    "potassium": 4.0,
+    "creatinine": 0.8,
+    "bun": 14,
+    "glucose": 98,
+    "troponin_i": 2.4,
+    "troponin_i_prior_draw": 0.8,
+    "ck_mb": 18.4,
+    "total_cholesterol": 268,
+    "ldl": 188,
+    "hdl": 38,
+    "triglycerides": 210,
+    "wbc": 10800,
+    "hemoglobin": 13.2,
+    "hematocrit": 39.6,
+    "platelets": 246000,
+    "inr": 1.0,
+    "ptt": 28
+  },
+  "pmh": [
+    "Hypertension (poorly controlled, on single agent)",
+    "Dyslipidemia (untreated — diagnosed 1 year ago, patient declined medication)",
+    "Active smoker — 10 pack-years (half-pack/day)",
+    "Oral contraceptive use (ethinyl estradiol/norgestimate × 5 years)",
+    "Migraine with aura",
+    "Family history: father had MI at age 45, paternal uncle died of sudden cardiac death at 52"
+  ],
+  "current_medications": [
+    "Lisinopril 10mg daily",
+    "Ethinyl estradiol/norgestimate 0.035mg/0.25mg daily (oral contraceptive)",
+    "Sumatriptan 50mg PRN migraine"
+  ],
+  "allergies": [],
+  "ed_assessment": "38-year-old female with hypertension presenting with 6 hours of substernal chest pain radiating to the left arm, onset at rest while watching television. Associated diaphoresis and nausea. Denies dyspnea. Describes pain as pressure-like, 8/10. Risk factors: active smoker, uncontrolled HTN, oral contraceptive use, strong family history of premature CAD, untreated dyslipidemia. ECG: sinus rhythm, no ST elevation, 1mm ST depression in V4-V6 and leads II, III, aVF. Troponin I rising: 0.8 on first draw, 2.4 at 3 hours. TIMI score 5/7 (high risk). Diagnosis: NSTEMI. Started aspirin 325mg loading dose, ticagrelor 180mg loading dose, heparin infusion per ACS protocol. Cardiology activated — cath lab discussion ongoing. Admit to CCU for monitoring and urgent catheterization planning. OCP should be discontinued.",
+  "handoff_notes": "38F NSTEMI, TIMI 5. Troponin rising (0.8 → 2.4). On heparin gtt — check PTT in 6h, target 60-100. Dual antiplatelet started (aspirin + ticagrelor). Cardiology at bedside — cath lab scheduled for 0700 tomorrow (early invasive strategy given TIMI score). NPO after midnight. Hold Lisinopril tonight (pre-cath). OCP DISCONTINUED — document prominently. If she develops chest pain overnight, immediate 12-lead and page cards. Patient very anxious — young patient, no prior cardiac history. Family (husband) at bedside.",
+  "baseline_functional_status": "Prior to this admission: fully independent, no functional limitations. Works as a graphic designer (sedentary occupation). Exercises occasionally. Non-drinker. Lives with husband and 6-year-old daughter. Endorses high stress levels at work over past 6 months.",
+  "imaging": [
+    {
+      "type": "CXR",
+      "timestamp": "2026-06-02T02:10:00",
+      "indication": "Chest pain — ACS workup, evaluate for aortic pathology and pulmonary edema",
+      "findings": "Normal cardiac silhouette. Clear lung fields bilaterally. No pleural effusion. Mediastinum not widened. No pneumothorax.",
+      "impression": "Normal chest radiograph. No aortic pathology or pulmonary edema."
+    },
+    {
+      "type": "ECG",
+      "timestamp": "2026-06-02T01:58:00",
+      "indication": "Chest pain — ACS evaluation",
+      "findings": "Sinus rhythm at 94 bpm. Normal axis. 1mm ST depression in V4-V6, II, III, aVF. No ST elevation. No new Q waves. T-wave flattening in lateral leads. QTc 420ms.",
+      "impression": "ST depression in lateral and inferior leads consistent with ischemia. No STEMI pattern. Serial ECGs recommended."
+    }
+  ],
+  "prior_hospitalizations": [
+    {
+      "date": "2022-03-07",
+      "reason": "Severe migraine with status migrainosus",
+      "length_of_stay_days": 2,
+      "treatment": "IV prochlorperazine, IV magnesium, IV DHE. Neurology consulted. MRI brain normal. Discharged on sumatriptan.",
+      "discharge_weight_kg": 68,
+      "transitional_issues": "Neurology outpatient follow-up. OCP discussed as possible migraine trigger — patient declined discontinuation at that time."
+    }
+  ]
+}

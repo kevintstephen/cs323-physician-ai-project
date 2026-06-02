@@ -1,0 +1,69 @@
+{
+  "patient_id": "TEST-002",
+  "name": "Maria Chen",
+  "age": 54,
+  "sex": "F",
+  "insurance": "Blue Cross Blue Shield PPO (employer-sponsored)",
+  "chief_complaint": "Nausea, vomiting, and abdominal pain for 2 days",
+  "vitals": {
+    "heart_rate": 118,
+    "blood_pressure": "94/62",
+    "respiratory_rate": 28,
+    "o2_saturation": 97,
+    "temperature_celsius": 37.9,
+    "weight_kg": 82
+  },
+  "labs": {
+    "sodium": 128,
+    "potassium": 5.8,
+    "creatinine": 1.3,
+    "bun": 26,
+    "glucose": 524,
+    "bicarbonate": 8,
+    "anion_gap": 28,
+    "beta_hydroxybutyrate": 4.8,
+    "wbc": 14600,
+    "hemoglobin": 13.1,
+    "hematocrit": 39.2,
+    "platelets": 302000,
+    "inr": 1.0,
+    "lipase": 42,
+    "hba1c": 11.4
+  },
+  "pmh": [
+    "Type 2 diabetes mellitus (newly diagnosed — HbA1c 11.4% on this visit)",
+    "Hypertension",
+    "Obesity (BMI 31)",
+    "Hypothyroidism"
+  ],
+  "current_medications": [
+    "Lisinopril 5mg daily",
+    "Metoprolol succinate 25mg daily",
+    "Levothyroxine 75mcg daily"
+  ],
+  "allergies": [
+    {"drug": "Sulfa", "reaction": "Stevens-Johnson syndrome"}
+  ],
+  "ed_assessment": "54-year-old female presenting with 2 days of nausea, vomiting, and diffuse abdominal pain. Family noticed she was confused this morning. PMH notable for hypertension and hypothyroidism — patient was unaware she had diabetes. Exam: ill-appearing, Kussmaul respirations, dry mucous membranes, mild diffuse abdominal tenderness without guarding. Point-of-care glucose 524. VBG: pH 7.12, pCO2 18, bicarb 8. Beta-hydroxybutyrate 4.8. Consistent with diabetic ketoacidosis. Starting insulin drip per DKA protocol, aggressive IV fluid resuscitation with normal saline. Endocrinology and nephrology notified. Potassium 5.8 — do not add K to fluids yet, will recheck in 2h.",
+  "handoff_notes": "54F with new DKA presentation, pH 7.12 on admission. On insulin drip — titrating per protocol. Fluids running. K 5.8 initially — will drop as acidosis corrects, follow closely. Glucose trending down, currently 310 at hour 4. Anion gap closing (was 28, now 22). Watch for hypoglycemia when gap closes and transition to SubQ insulin. Endocrine following. Patient is DNR/DNI per family discussion — please confirm with patient when she is more alert.",
+  "baseline_functional_status": "Prior to this admission: full ADLs, works full-time as a restaurant manager. No prior functional limitations. Lives with husband and two adult children. Mild fatigue and polyuria noted over the past 3 months but attributed to work stress.",
+  "imaging": [
+    {
+      "type": "CXR",
+      "timestamp": "2026-06-01T03:15:00",
+      "indication": "DKA workup — rule out infectious precipitant",
+      "findings": "No focal consolidation. No pulmonary edema. Heart size normal. No pleural effusion. No pneumothorax.",
+      "impression": "Normal chest radiograph. No infectious pulmonary precipitant identified."
+    }
+  ],
+  "prior_hospitalizations": [
+    {
+      "date": "2023-08-14",
+      "reason": "Hypertensive urgency",
+      "length_of_stay_days": 2,
+      "treatment": "IV labetalol, oral antihypertensive uptitration. Discharged on Lisinopril 5mg and metoprolol succinate 25mg.",
+      "discharge_weight_kg": 80,
+      "transitional_issues": "PCP to check BMP in 1 week after medication adjustment. Blood pressure log recommended."
+    }
+  ]
+}
