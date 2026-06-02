@@ -82,19 +82,31 @@ button, input, textarea, select {
 [data-testid="stSidebar"] .stMarkdown { color: rgba(255,255,255,0.85) !important; }
 [data-testid="stSidebar"] h1 { color: #fff !important; font-weight: 700 !important; letter-spacing: -0.02em !important; }
 [data-testid="stSidebar"] hr { border-color: rgba(255,255,255,0.12) !important; }
-[data-testid="stSidebar"] .stButton > button {
+[data-testid="stSidebar"] .stButton > button,
+[data-testid="stSidebar"] .stDownloadButton > button {
     background: rgba(255,255,255,0.1) !important;
     border: 1px solid rgba(255,255,255,0.18) !important;
     color: rgba(255,255,255,0.9) !important;
     border-radius: 980px !important;
     backdrop-filter: blur(10px);
 }
-[data-testid="stSidebar"] .stButton > button:hover {
+[data-testid="stSidebar"] .stButton > button:hover,
+[data-testid="stSidebar"] .stDownloadButton > button:hover {
     background: rgba(255,255,255,0.18) !important;
 }
 [data-testid="stSidebar"] [data-baseweb="select"] > div {
-    background: rgba(255,255,255,0.08) !important;
-    border-color: rgba(255,255,255,0.15) !important;
+    background: rgba(255,255,255,0.22) !important;
+    border-color: rgba(255,255,255,0.45) !important;
+}
+[data-testid="stSidebar"] [data-baseweb="select"]:hover > div {
+    background: rgba(255,255,255,0.3) !important;
+    border-color: rgba(255,255,255,0.6) !important;
+}
+[data-testid="stSidebar"] [data-baseweb="select"] div,
+[data-testid="stSidebar"] [data-baseweb="select"] input,
+[data-testid="stSidebar"] [data-baseweb="select"] svg {
+    color: #fff !important;
+    fill: #fff !important;
 }
 
 /* ── Typography ─────────────────────────────────────── */
@@ -115,7 +127,8 @@ h3 {
 p, li { color: #1C1C1E; }
 
 /* ── Buttons: pill-shaped liquid glass ──────────────── */
-.stButton > button {
+.stButton > button,
+.stDownloadButton > button {
     border-radius: 980px !important;
     font-weight: 590 !important;
     font-size: 0.9rem !important;
