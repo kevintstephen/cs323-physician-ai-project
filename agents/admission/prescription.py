@@ -113,6 +113,46 @@ Draft the inpatient prescription orders. For each drug: look up FDA label info, 
         )
 
     @staticmethod
+    def _salvage_objects(text: str) -> list[dict]:
+        """Extracts every complete top-level JSON object from `text`.
+
+        Walks the string tracking brace depth (ignoring braces inside string literals)
+        so a truncated array still yields whatever objects closed cleanly. Prescription
+        objects contain no nested objects, so each balanced {...} is one order."""
+        objs: list[dict] = []
+        depth = 0
+        start_idx = None
+        in_str = False
+        esc = False
+        for i, ch in enumerate(text):
+            if in_str:
+                if esc:
+                    esc = False
+                elif ch == "\\":
+                    esc = True
+                elif ch == '"':
+                    in_str = False
+                continue
+            if ch == '"':
+                in_str = True
+            elif ch == "{":
+                if depth == 0:
+                    start_idx = i
+                depth += 1
+            elif ch == "}":
+                if depth > 0:
+                    depth -= 1
+                    if depth == 0 and start_idx is not None:
+                        try:
+                            obj = json.loads(text[start_idx:i + 1])
+                            if isinstance(obj, dict):
+                                objs.append(obj)
+                        except (json.JSONDecodeError, ValueError):
+                            pass
+                        start_idx = None
+        return objs
+
+    @staticmethod
     def parse_prescriptions(content: str) -> list[dict]:
         """
         Parses the JSON array from agent output.
@@ -159,6 +199,14 @@ Draft the inpatient prescription orders. For each drug: look up FDA label info, 
                     return found
             except (json.JSONDecodeError, ValueError):
                 pass
+
+        # Strategy 4: salvage every complete top-level object from a truncated/malformed
+        # array. The model can exceed its token budget mid-array, leaving the final object
+        # (and the closing ']') cut off — recover the orders that *did* come through whole
+        # rather than discarding the entire draft.
+        salvaged = PrescriptionDraftAgent._salvage_objects(text)
+        if salvaged:
+            return salvaged
 
         return [{
             "drug_name": "Parse error",

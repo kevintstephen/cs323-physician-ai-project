@@ -85,7 +85,11 @@ class AnthropicBackend(LLMBackend):
         while True:
             response = self.client.messages.create(
                 model=model,
-                max_tokens=4096,
+                # The prescription agent emits a JSON array of full order objects, which
+                # routinely runs past 4096 tokens for multi-drug admissions and gets cut
+                # off mid-object — leaving unparseable JSON. Give the final turn room to
+                # complete the array.
+                max_tokens=16384,
                 system=system_blocks,
                 tools=tools,
                 messages=messages,
