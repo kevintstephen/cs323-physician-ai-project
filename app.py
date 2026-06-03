@@ -1,5 +1,5 @@
 """
-Physician AI — Streamlit frontend
+Cardio — Streamlit frontend
 
 Run with:
     streamlit run app.py
@@ -39,20 +39,33 @@ load_dotenv()
 # ---------------------------------------------------------------------------
 
 st.set_page_config(
-    page_title="Physician AI",
-    page_icon="🏥",
+    page_title="Cardio",
+    page_icon="🫀",
     layout="wide",
 )
 
 st.markdown("""
 <style>
-/* ── Fonts: SF Pro on macOS, system-ui everywhere else ── */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap');
+
+/* ── Body: San Francisco (Apple system font) ── */
 body {
-    font-family: -apple-system, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 button, input, textarea, select {
-    font-family: inherit;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+}
+
+/* ── Display headings: Cormorant ── */
+h1, h2, .patient-name, .action-card-title,
+.insights-title, .kanban-header,
+[data-testid="stMarkdownContainer"] h1,
+[data-testid="stMarkdownContainer"] h2 {
+    font-family: "Cormorant", Georgia, "Times New Roman", serif !important;
+    font-weight: 500 !important;
+    letter-spacing: -0.01em !important;
 }
 
 /* ── Background ─────────────────────────────────────── */
@@ -64,7 +77,7 @@ button, input, textarea, select {
     background: transparent !important;
 }
 .main .block-container {
-    padding: 1.5rem 2.5rem 3rem;
+    padding: 0.75rem 2.5rem 2rem;
     max-width: 1400px;
 }
 
@@ -123,9 +136,9 @@ button, input, textarea, select {
 
 /* ── Typography ─────────────────────────────────────── */
 h2 {
-    font-size: 1.6rem !important;
-    font-weight: 700 !important;
-    letter-spacing: -0.03em !important;
+    font-size: 2rem !important;
+    font-weight: 500 !important;
+    letter-spacing: -0.01em !important;
     color: #1C1C1E !important;
 }
 h3 {
@@ -177,7 +190,7 @@ p, li { color: #1C1C1E; }
     border: 1px solid rgba(255,255,255,0.72) !important;
     border-radius: 18px !important;
     box-shadow: 0 4px 20px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.9) !important;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.35rem;
 }
 [data-testid="stExpander"] summary {
     font-weight: 600 !important;
@@ -280,6 +293,7 @@ div[data-testid="stVerticalBlock"],
     margin-bottom: 1.25rem;
     box-shadow: 0 8px 32px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.95);
     position: relative; overflow: hidden;
+    margin-bottom: 0.6rem;
 }
 .patient-header-card::before {
     content: '';
@@ -288,7 +302,8 @@ div[data-testid="stVerticalBlock"],
     border-radius: 24px 24px 0 0; pointer-events: none;
 }
 .patient-name {
-    font-size: 1.75rem; font-weight: 700; letter-spacing: -0.03em; color: #1C1C1E;
+    font-family: "Cormorant", Georgia, serif;
+    font-size: 2.1rem; font-weight: 500; letter-spacing: -0.01em; color: #1C1C1E;
 }
 .patient-meta { font-size: 1.1rem; font-weight: 400; color: rgba(60,60,67,0.5); margin-left: 0.5rem; }
 .chief-complaint { color: rgba(60,60,67,0.65); font-size: 0.93rem; margin: 0.4rem 0 1rem; }
@@ -656,10 +671,9 @@ app_mode = st.session_state["app_mode"]
 
 with st.sidebar:
     st.markdown("""
-<div style="padding:0.5rem 0.85rem 0.25rem; font-size:1.05rem; font-weight:700;
-     letter-spacing:-0.02em; color:#fff;">🏥 Physician AI</div>
-<div style="padding:0 0.85rem 0.75rem; font-size:0.72rem; color:rgba(255,255,255,0.45);
-     text-transform:uppercase; letter-spacing:0.08em;">Clinical Assistant</div>
+<div style="padding:0.75rem 0.85rem 1rem; font-size:2.2rem; font-weight:500;
+     letter-spacing:-0.01em; color:#fff;
+     font-family:'Cormorant',Georgia,serif;">Cardio</div>
 """, unsafe_allow_html=True)
 
     # ── Main nav ──────────────────────────────────────────────────────────────
@@ -740,9 +754,6 @@ with st.sidebar:
             st.session_state["app_mode"] = "Patient Workflows"
             st.rerun()
 
-    st.divider()
-    st.markdown("<span style='font-size:0.68rem;color:rgba(255,255,255,0.25);padding:0 0.85rem'>"
-                "Stanford CS323 · AI Awakening</span>", unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
 # Wiki Management View
@@ -1008,8 +1019,7 @@ def render_dashboard():
     registry = _load_patient_registry()
 
     hdr_col, btn_col = st.columns([5, 1])
-    hdr_col.markdown("## Morning Rounds")
-    hdr_col.caption("All patients · click any card to open their workflow")
+    hdr_col.markdown("## My Patients")
     if btn_col.button("＋ Add Patient", type="primary", use_container_width=True):
         st.session_state["open_dialog"] = "add_patient"
 
@@ -1197,7 +1207,7 @@ def render_patient_workflows(patient_id: str):
                     for issue in rec.open_issues: st.markdown(f"⚠️ {issue}")
                     for res in rec.resolved_issues: st.markdown(f"✅ {res}")
                 st.divider()
-    st.divider()
+    st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
     btn_col1, btn_col2, btn_col3 = st.columns(3)
 
     def run_wf(label: str, workflow_name: str, steps: list, session_fn):
