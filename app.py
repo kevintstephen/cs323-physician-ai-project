@@ -826,7 +826,8 @@ def _render_citation_detail(insight: dict, insight_id: str, doctor_id: str = "de
     if attrs.get("URL"): st.markdown(f"[View source]({attrs['URL']})")
     if attrs.get("Physician Notes"): st.markdown(f"**My Interpretation:** {attrs['Physician Notes']}")
     if attrs.get("Rationale"): st.markdown(f"**Rationale:** {attrs['Rationale']}")
-    if attrs.get(ADDED_KEY): st.caption(_format_added(attrs[ADDED_KEY]))
+    # Always surface recency so the physician knows how current this guidance is.
+    st.caption(_format_added(attrs[ADDED_KEY]) if attrs.get(ADDED_KEY) else "🗓 Date not recorded")
     _render_related_literature(insight, insight_id, doctor_id)
 
 
@@ -1536,36 +1537,41 @@ _URGENCY_ICON = {"now": "🔴", "today": "🟡", "routine": "⚪"}
 def _dialog_ci_meds(med_actions: list):
     selected = []
     for i, action in enumerate(med_actions):
-        st.markdown(f"{_URGENCY_ICON.get(action.get('urgency', 'routine'), '⚪')} **{action.get('title', '?')}**")
+        st.markdown(f"{_URGENCY_ICON.get(action.get('urgency', 'routine'), '⚪')} **{_strip_citations(action.get('title', '?'))}**")
         if action.get("detail"):
             st.caption(_strip_citations(action["detail"]))
-        edited = st.text_input("Order text", value=action.get("title", ""), key=f"ci_med_edit_{i}", label_visibility="collapsed")
+        # Citation sits directly under the order it supports, not in the editable field below.
+        render_citation_chips(f"{action.get('title', '')} {action.get('detail', '')}", f"ci_med_{i}", caption="")
+        edited = st.text_input("Order text", value=_strip_citations(action.get("title", "")), key=f"ci_med_edit_{i}", label_visibility="collapsed")
         if st.checkbox("Include in order", value=True, key=f"ci_med_chk_{i}"): selected.append({**action, "title": edited})
         st.divider()
     if st.button(f"Send {len(selected)} Order(s) to Epic", type="primary", use_container_width=True, disabled=not selected):
         st.session_state["ci_meds_sent"] = True; st.session_state.pop("open_dialog", None)
         st.rerun()
-    render_citation_chips(" ".join(a.get("detail", "") for a in med_actions), "ci_meds")
 
 @st.dialog("🧪 Lab Orders", width="large")
 def _dialog_ci_labs(lab_actions: list):
     if not lab_actions: st.info("No lab orders."); return
     selected = []
     for i, action in enumerate(lab_actions):
-        if st.checkbox(f"{_URGENCY_ICON.get(action.get('urgency', 'routine'), '⚪')} **{action.get('title', '?')}**", value=True, key=f"ci_lab_chk_{i}"): selected.append(action)
+        if st.checkbox(f"{_URGENCY_ICON.get(action.get('urgency', 'routine'), '⚪')} **{_strip_citations(action.get('title', '?'))}**", value=True, key=f"ci_lab_chk_{i}"): selected.append(action)
         if action.get("detail"):
             st.caption(f"  {_strip_citations(action['detail'])}")
+        # Citation sits directly under the lab order it supports.
+        render_citation_chips(f"{action.get('title', '')} {action.get('detail', '')}", f"ci_lab_{i}", caption="")
     st.divider()
     if st.button(f"Send {len(selected)} Order(s) to Epic", type="primary", use_container_width=True, disabled=not selected):
         st.session_state["ci_labs_sent"] = True; st.session_state.pop("open_dialog", None)
         st.rerun()
-    render_citation_chips(" ".join(a.get("detail", "") for a in lab_actions), "ci_labs")
 
 @st.dialog("📋 Clinical Updates", width="large")
 def _dialog_ci_updates(changes: list, note_actions: list, patient_id: str):
     if changes:
         st.markdown("**What changed:**")
-        for c in changes: st.markdown(f"{_TREND_ICON.get(c.get('trend', ''), '•')} **{c.get('finding', '')}** — {_strip_citations(c.get('significance', ''))}")
+        for i, c in enumerate(changes):
+            st.markdown(f"{_TREND_ICON.get(c.get('trend', ''), '•')} **{c.get('finding', '')}** — {_strip_citations(c.get('significance', ''))}")
+            # Citation sits right under the finding it supports.
+            render_citation_chips(c.get("significance", ""), f"ci_chg_{i}", caption="")
         st.divider()
     note_lines = [f"- {c.get('finding', '')}: {c.get('significance', '')}" for c in changes] + [f"- {a.get('title', '')}: {a.get('detail', '')}" for a in note_actions]
     note_blob = "\n".join(note_lines)
@@ -1580,7 +1586,8 @@ def _dialog_ci_updates(changes: list, note_actions: list, patient_id: str):
     if c2.button("Email to Patient", use_container_width=True):
         st.session_state["ci_updates_saved"] = True; st.session_state.pop("open_dialog", None)
         st.rerun()
-    render_citation_chips(note_blob, "ci_updates")
+    # Note-item citations have no discrete row above, so surface them at the bottom.
+    render_citation_chips(" ".join(a.get("detail", "") for a in note_actions), "ci_updates")
 
 def _run_checkin_agent(patient_id: str, llm_provider: str, wiki: str, delta_data: dict):
     backend, model = get_backend(llm_provider)
@@ -1655,6 +1662,9 @@ def _render_rx_card(idx: int, rx: dict):
         if rx.get("drug_info_summary"): st.caption(f"ℹ️ **Drug info:** {_strip_citations(rx['drug_info_summary'])}")
         if rx.get("pa_notes"): (st.warning if pa_req else st.caption)(f"**PA:** {_strip_citations(rx['pa_notes'])}")
         if rx.get("alternatives"): st.caption("**Alternatives:** " + " · ".join(rx["alternatives"]))
+        # Citation sits within this drug's card, not in the editable notes field above.
+        _rx_cite_text = " ".join([rx.get("agent_notes", ""), rx.get("drug_info_summary", ""), rx.get("pa_notes", "")])
+        render_citation_chips(_rx_cite_text, f"rx_{idx}", caption="")
         b1, b2, _ = st.columns([1, 1, 4])
         if b1.button("✓ Approve", key=f"approve_{idx}", type="primary"):
             st.session_state["approved_orders"].append({"_idx": idx, "drug_name": drug_name, "dose": dose, "route": route, "frequency": freq, "quantity": qty, "refills": ref, "indication": ind, "status": "pending_pharmacy"})
@@ -1686,25 +1696,22 @@ def _dialog_prescriptions():
         st.session_state["approved_orders"] = []
         st.session_state.pop("open_dialog", None)
         st.rerun()
-    _rx_cites = " ".join(
-        f"{d.get('agent_notes', '')} {d.get('drug_info_summary', '')} {d.get('pa_notes', '')}"
-        for d in drafts)
-    render_citation_chips(_rx_cites, "rx_all")
 
 @st.dialog("🧪 Lab Orders", width="large")
 def _dialog_labs(lab_actions: list):
     if not lab_actions: st.info("No lab orders extracted."); return
     st.caption("Select orders to send."); st.divider(); selected, icon_map = [], {"now": "🔴", "today": "🟡", "routine": "⚪"}
     for i, a in enumerate(lab_actions):
-        if st.checkbox(f"{icon_map.get(a.get('urgency', 'routine'), '⚪')} **{a.get('title', '?')}**", value=True, key=f"lab_chk_{i}"): selected.append(a)
+        if st.checkbox(f"{icon_map.get(a.get('urgency', 'routine'), '⚪')} **{_strip_citations(a.get('title', '?'))}**", value=True, key=f"lab_chk_{i}"): selected.append(a)
         if a.get("detail"):
             st.caption(f"  {_strip_citations(a['detail'])}")
+        # Citation sits directly under the lab order it supports.
+        render_citation_chips(f"{a.get('title', '')} {a.get('detail', '')}", f"lab_{i}", caption="")
     st.divider()
     if st.button(f"Send {len(selected)} Order(s) to Epic", type="primary", use_container_width=True, disabled=not selected):
         st.session_state["labs_sent_to_epic"] = True
         st.session_state.pop("open_dialog", None)
         st.rerun()
-    render_citation_chips(" ".join(a.get("detail", "") for a in lab_actions), "labs_all")
 
 @st.dialog("📋 Admission Note", width="large")
 def _dialog_notes(note_text: str, patient_id: str):
@@ -1832,6 +1839,8 @@ def _dialog_dc_checklist(text: str):
             checked = st.checkbox(clean, key=f"dc_chk_{i}")
             if not checked:
                 all_checked = False
+            # Citation sits directly under the checklist item that cites it.
+            render_citation_chips(line, f"dc_chk_{i}", caption="")
     st.divider()
     if st.button("Sign Off", type="primary", use_container_width=True, disabled=not all_checked):
         st.session_state["dc_checklist_done"] = True
@@ -1839,7 +1848,6 @@ def _dialog_dc_checklist(text: str):
         st.rerun()
     if not all_checked:
         st.caption("Check all items to enable sign-off.")
-    render_citation_chips(text, "dc_checklist")
 
 
 @st.dialog("🛡️ Safety Check", width="large")
