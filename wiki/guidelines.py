@@ -81,7 +81,15 @@ def save_guideline(category: str, topic: str, text: str, attributes: dict, docto
     """
     content = get_wiki_file_content(doctor_id, "guidelines.md")
     sections = parse_wiki_sections(content)
-    
+
+    # The wiki markdown stores each field as a single "  - Key: value" line, so any newline
+    # in a pasted abstract/notes value would split the entry and corrupt parsing. Collapse
+    # internal whitespace to keep every value on one line.
+    def _flatten(v):
+        return " ".join(str(v).split())
+    text = _flatten(text)
+    attributes = {k: _flatten(v) for k, v in attributes.items()}
+
     # New guidelines are stamped with the date they enter the wiki; updates to an existing
     # guideline keep its original Added date.
     new_attributes = dict(attributes)

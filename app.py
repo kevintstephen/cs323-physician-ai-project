@@ -21,9 +21,9 @@ from tools.epic import EpicClient
 from wiki.loader import (
     load_wiki, get_pending_updates, remove_pending_update,
     update_wiki, get_wiki_file_content, save_wiki_file_content,
-    get_wiki_insight, parse_wiki_sections, ADDED_KEY
+    get_wiki_insight, parse_wiki_sections, generate_id, ADDED_KEY
 )
-from wiki.guidelines import search_pubmed, save_guideline, search_guidelines
+from wiki.guidelines import search_pubmed, save_guideline, search_guidelines, delete_guideline
 from llm import AnthropicBackend, GeminiBackend
 from workflows.engine import WorkflowEngine
 from workflows.admission import ADMISSION_STEPS
@@ -1037,6 +1037,36 @@ def render_pending_update_card(i: int, item: dict, doctor_id: str, suffix: str =
             remove_pending_update(doctor_id, i)
             st.rerun()
 
+def render_saved_guidelines(doctor_id: str = "default"):
+    """Lists every saved guideline / external source from guidelines.md as a card, so a
+    physician can see what they added (and remove it) right where they add new sources."""
+    sections = parse_wiki_sections(get_wiki_file_content(doctor_id, "guidelines.md"))
+    if not sections or not any(s["rules"] for s in sections):
+        st.caption("No saved literature or external sources yet. Add one below.")
+        return
+    current_cat = None
+    for s in sections:
+        for r in s["rules"]:
+            attrs = r.get("attributes", {})
+            rid = generate_id(s["category"], s["topic"], r["text"])
+            if s["category"] != current_cat:
+                st.markdown(f"#### 📁 {s['category']}")
+                current_cat = s["category"]
+            with st.container(border=True):
+                st.markdown(f"**{s['topic']}** — {r['text']}")
+                if attrs.get("Decision"): _render_decision_badge(attrs["Decision"])
+                if attrs.get("Key Recommendation"): st.markdown(f"**Key Recommendation:** {attrs['Key Recommendation']}")
+                if attrs.get("Source"): st.caption(f"Source: {attrs['Source']}")
+                if attrs.get("URL"): st.markdown(f"[View source]({attrs['URL']})")
+                if attrs.get("File"): st.caption(f"📎 {attrs['File']}")
+                if attrs.get("Physician Notes"): st.markdown(f"**My Interpretation:** {attrs['Physician Notes']}")
+                if attrs.get("Rationale"): st.markdown(f"**Rationale:** {attrs['Rationale']}")
+                st.caption(_format_added(attrs[ADDED_KEY]) if attrs.get(ADDED_KEY) else "🗓 Date not recorded")
+                if st.button("🗑 Delete", key=f"del_gl_{rid}"):
+                    delete_guideline(s["category"], s["topic"], r["text"], doctor_id)
+                    st.rerun()
+
+
 def render_wiki_management():
     st.header("📚 Doctor's Wiki & Preferences")
     st.markdown("Grounding for all agents. Review new learnings from cases, or manually edit your clinical protocols and preferences.")
@@ -1126,6 +1156,9 @@ def render_wiki_management():
     with tab_protocols: render_wiki_editor("clinical_protocols.md", "Protocols")
     with tab_prefs: render_wiki_editor("preferences.md", "Preferences")
     with tab_lit:
+        st.subheader("📚 My Saved Literature & External Sources")
+        render_saved_guidelines(doctor_id)
+        st.divider()
         st.subheader("🔍 Search Clinical Literature (PubMed)")
         lit_query = st.text_input("Find guidelines or studies...", placeholder="e.g. SGLT2 inhibitors heart failure", key="lit_search_input")
         if lit_query:
