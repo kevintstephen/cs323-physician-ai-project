@@ -13,14 +13,15 @@ import os
 import re
 import json
 import streamlit as st
+from datetime import date
 from pathlib import Path
 from dotenv import load_dotenv
 
 from tools.epic import EpicClient
 from wiki.loader import (
-    load_wiki, get_pending_updates, remove_pending_update, 
+    load_wiki, get_pending_updates, remove_pending_update,
     update_wiki, get_wiki_file_content, save_wiki_file_content,
-    get_wiki_insight, parse_wiki_sections
+    get_wiki_insight, parse_wiki_sections, ADDED_KEY
 )
 from wiki.guidelines import search_pubmed, save_guideline, search_guidelines
 from llm import AnthropicBackend, GeminiBackend
@@ -116,6 +117,24 @@ h1, h2, .patient-name, .action-card-title,
     color: rgba(255,255,255,0.95) !important;
     transform: none !important;
 }
+/* Sidebar download button (e.g. "Sample check-in file"): glass pill instead of
+   Streamlit's default light button, which otherwise reads as a white box. */
+[data-testid="stSidebar"] .stDownloadButton > button {
+    background: rgba(255,255,255,0.10) !important;
+    border: 1px solid rgba(255,255,255,0.22) !important;
+    border-radius: 8px !important;
+    color: rgba(255,255,255,0.9) !important;
+    font-weight: 500 !important;
+    font-size: 0.85rem !important;
+    box-shadow: none !important;
+    transition: background 0.15s, color 0.15s !important;
+}
+[data-testid="stSidebar"] .stDownloadButton > button:hover {
+    background: rgba(255,255,255,0.18) !important;
+    border-color: rgba(255,255,255,0.35) !important;
+    color: #FFFFFF !important;
+    transform: none !important;
+}
 /* Selected nav item */
 [data-testid="stSidebar"] .stButton > button[kind="primary"] {
     background: rgba(255,255,255,0.13) !important;
@@ -130,8 +149,19 @@ h1, h2, .patient-name, .action-card-title,
     transform: none !important;
 }
 [data-testid="stSidebar"] [data-baseweb="select"] > div {
-    background: rgba(255,255,255,0.08) !important;
-    border-color: rgba(255,255,255,0.15) !important;
+    background: rgba(255,255,255,0.14) !important;
+    border-color: rgba(255,255,255,0.30) !important;
+}
+[data-testid="stSidebar"] [data-baseweb="select"]:hover > div {
+    background: rgba(255,255,255,0.22) !important;
+    border-color: rgba(255,255,255,0.45) !important;
+}
+/* Selected value text + dropdown arrow: keep legible on the dark glass */
+[data-testid="stSidebar"] [data-baseweb="select"] div,
+[data-testid="stSidebar"] [data-baseweb="select"] input,
+[data-testid="stSidebar"] [data-baseweb="select"] svg {
+    color: #FFFFFF !important;
+    fill: #FFFFFF !important;
 }
 
 /* ── Typography ─────────────────────────────────────── */
@@ -434,6 +464,54 @@ div[data-testid="stVerticalBlock"],
 .pt-chip.alert { background: rgba(255,59,48,0.1); color: #C0392B; }
 .pt-date { font-size: 0.68rem; color: rgba(60,60,67,0.38); margin-bottom: 0.4rem; }
 .kanban-empty { font-size: 0.78rem; color: rgba(60,60,67,0.3); text-align: center; padding: 1.5rem 0; }
+
+/* ── Settings gear popover trigger (borderless icon) ──── */
+.st-key-settingsgear [data-testid="stPopover"] > button,
+.st-key-settingsgear [data-testid="stPopover"] > div > button {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0.1rem 0.3rem !important;
+    color: rgba(60,60,67,0.55) !important;
+}
+.st-key-settingsgear [data-testid="stPopover"] button:hover {
+    background: transparent !important;
+    color: #3C3C43 !important;
+}
+/* The emoji glyph size is driven by the label element's font-size, not the
+   button's — bump it 20% there. */
+.st-key-settingsgear [data-testid="stPopover"] button p,
+.st-key-settingsgear [data-testid="stPopover"] button div,
+.st-key-settingsgear [data-testid="stPopover"] button span {
+    font-size: 1.12em !important;
+}
+
+/* ── Wiki citation chips: small, unobtrusive pill tags ─── */
+[class*="st-key-wikicite"] [data-testid="stPopover"] button {
+    background: rgba(0,122,255,0.07) !important;
+    border: 1px solid rgba(0,122,255,0.18) !important;
+    border-radius: 980px !important;
+    color: #0056D6 !important;
+    font-weight: 500 !important;
+    font-size: 0.72rem !important;
+    line-height: 1.25 !important;
+    padding: 0.12rem 0.6rem !important;
+    min-height: 0 !important;
+    box-shadow: none !important;
+}
+[class*="st-key-wikicite"] [data-testid="stPopover"] button:hover {
+    background: rgba(0,122,255,0.14) !important;
+    border-color: rgba(0,122,255,0.32) !important;
+    color: #0056D6 !important;
+    transform: none !important;
+}
+[class*="st-key-wikicite"] [data-testid="stPopover"] button p {
+    font-size: 0.72rem !important;
+}
+[class*="st-key-wikicite"] .stCaption,
+[class*="st-key-wikicite"] [data-testid="stCaptionContainer"] {
+    margin-bottom: 0.1rem !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -618,32 +696,204 @@ def get_related_updates(text: str, pending_list: list[dict]) -> list[int]:
             related_indices.append(i)
     return related_indices
 
-def render_content_with_citations(text: str, key_suffix: str, doctor_id: str = "default"):
-    """Renders text cleanly and places interactive wiki citation buttons."""
+# Matches a citation token, including comma-separated multi-ID lists like
+# [WikiID: cdac3, 1b58ba, 274621] as well as bare/parenthesized variants. The id group is
+# captured greedily as one id followed by any number of ", id" repeats so multi-ID lists
+# are kept whole (a non-greedy capture with an optional closing bracket would stop at the
+# first character).
+_CITATION_PATTERN = re.compile(r'[\[\(]?\s*WikiID:\s*([a-zA-Z0-9]{3,}(?:\s*,\s*[a-zA-Z0-9]{3,})*)\s*[\]\)]?', re.IGNORECASE)
+
+
+def _split_citation_ids(raw: str) -> list[str]:
+    """Splits a captured id group (possibly comma/space separated) into clean lowercase ids."""
+    return [p.strip().lower() for p in re.split(r'[,\s]+', raw) if p.strip()]
+
+
+def _extract_citation_ids(text: str) -> list[str]:
+    """Returns the ordered, de-duplicated wiki IDs referenced anywhere in text."""
+    ids: list[str] = []
+    for m in _CITATION_PATTERN.finditer(text or ""):
+        for cid in _split_citation_ids(m.group(1)):
+            if cid not in ids:
+                ids.append(cid)
+    return ids
+
+
+def _citation_label(insight: dict, fallback: str = "") -> str:
+    """Human-readable chip label from a get_wiki_insight() dict: 'Topic · Source'."""
+    if not insight:
+        return fallback or "Wiki ref"
+    label = insight.get("topic") or insight.get("category") or "Wiki ref"
+    source = (insight.get("attributes") or {}).get("Source")
+    if source:
+        label += f" · {source if len(source) <= 32 else source[:29] + '…'}"
+    return label
+
+
+def humanize_citations(text: str, doctor_id: str = "default") -> str:
+    """Replaces raw [WikiID: xxx] tokens with readable [📚 Topic] labels for inline display."""
+    if not text:
+        return text
+    def _repl(m):
+        labels = []
+        for cid in _split_citation_ids(m.group(1)):
+            insight = get_wiki_insight(doctor_id, cid)
+            labels.append(insight.get("topic") if insight else cid)
+        return f"[📚 {'; '.join(labels)}]" if labels else m.group(0)
+    return _CITATION_PATTERN.sub(_repl, text)
+
+
+def _strip_citations(text: str) -> str:
+    """Removes raw [WikiID: xxx] tokens entirely, leaving clean prose.
+
+    Used for editable / Epic-bound text (notes, discharge summaries, patient instructions)
+    where citations belong in a separate Sources section, not inline."""
+    if not text:
+        return text
+    return re.sub(r'[ \t]{2,}', ' ', _CITATION_PATTERN.sub('', text)).strip()
+
+
+# Attribute keys that mark a wiki entry as clinical literature/guideline (vs. a protocol/preference).
+_LITERATURE_MARKERS = ("Key Recommendation", "Source", "URL", "Decision")
+
+
+def _is_literature(insight: dict) -> bool:
+    """True if a resolved wiki entry looks like a guideline/literature reference."""
+    return any(k in (insight.get("attributes") or {}) for k in _LITERATURE_MARKERS)
+
+
+def _related_literature(insight: dict, self_id: str, doctor_id: str) -> list:
+    """Resolves WikiIDs embedded in a note's text/attributes to any linked literature entries."""
+    attrs = insight.get("attributes") or {}
+    blob = " ".join([insight.get("rule", "")] + [str(v) for v in attrs.values()])
+    related, seen = [], {(self_id or "").lower()}
+    for cid in _extract_citation_ids(blob):
+        if cid in seen:
+            continue
+        seen.add(cid)
+        ref = get_wiki_insight(doctor_id, cid)
+        if ref and _is_literature(ref):
+            related.append((cid, ref))
+    return related
+
+
+def _format_added(date_str: str) -> str:
+    """Formats an Added date with a relative age so the physician sees how old a reference is."""
+    try:
+        d = date.fromisoformat(date_str.strip())
+    except Exception:
+        return f"🗓 Added {date_str}"
+    days = (date.today() - d).days
+    if days <= 0:
+        age = "today"
+    elif days < 31:
+        age = f"{days} day{'s' if days != 1 else ''} ago"
+    elif days < 365:
+        months = days // 30
+        age = f"{months} mo ago"
+    else:
+        years = days // 365
+        age = f"{years} yr ago"
+    return f"🗓 Added {d.isoformat()} · {age}"
+
+
+def _render_decision_badge(decision: str):
+    """Renders a colored badge reflecting the physician's adopt/defer decision."""
+    d = (decision or "").strip().lower()
+    if d == "adopted":
+        st.success("✅ Adopted")
+    elif d == "deferred":
+        st.warning("⏸️ Deferred")
+    else:
+        st.info("🔍 Under review")
+
+
+def _render_related_literature(insight: dict, self_id: str, doctor_id: str):
+    """Shows clinical literature/guidelines embedded within a wiki note, if any."""
+    related = _related_literature(insight, self_id, doctor_id)
+    if not related:
+        return
+    st.divider()
+    st.markdown("**📚 Related literature**")
+    for cid, ref in related:
+        rattrs = ref.get("attributes") or {}
+        st.markdown(f"- *{ref['rule']}*")
+        bits = []
+        if rattrs.get("Key Recommendation"): bits.append(rattrs["Key Recommendation"])
+        if rattrs.get("Source"): bits.append(f"Source: {rattrs['Source']}")
+        if rattrs.get("Decision"): bits.append(f"Decision: {rattrs['Decision']}")
+        if bits: st.caption(" · ".join(bits))
+        if rattrs.get("URL"): st.markdown(f"[View source]({rattrs['URL']})")
+
+
+def _render_citation_detail(insight: dict, insight_id: str, doctor_id: str = "default"):
+    """Renders the full source detail shown inside a citation popover / reference card."""
+    if not insight:
+        st.caption(f"Reference `{insight_id}` is not in your current wiki — it may have been edited or removed.")
+        return
+    attrs = insight.get("attributes") or {}
+    st.markdown(f"**{insight['category']}** › {insight['topic']}")
+    if attrs.get("Decision"):
+        _render_decision_badge(attrs.get("Decision"))
+    st.info(insight["rule"])
+    if attrs.get("Key Recommendation"): st.markdown(f"**Key Recommendation:** {attrs['Key Recommendation']}")
+    if attrs.get("Source"): st.caption(f"Source: {attrs['Source']}")
+    if attrs.get("URL"): st.markdown(f"[View source]({attrs['URL']})")
+    if attrs.get("Physician Notes"): st.markdown(f"**My Interpretation:** {attrs['Physician Notes']}")
+    if attrs.get("Rationale"): st.markdown(f"**Rationale:** {attrs['Rationale']}")
+    if attrs.get(ADDED_KEY): st.caption(_format_added(attrs[ADDED_KEY]))
+    _render_related_literature(insight, insight_id, doctor_id)
+
+
+def render_citation_chips(text: str, key_suffix: str, doctor_id: str = "default", caption: str = "📚 Sources from your wiki:"):
+    """Renders only the small wiki source chips for any WikiIDs found in `text`.
+
+    Use this to place citations under a section (or at the bottom of a dialog) without
+    repeating the body text. Each chip names the guideline/protocol (topic · source) and
+    reveals the full rule, adopt/defer decision, the date it was added to the wiki, and the
+    physician's interpretation inline via st.popover. Pass caption="" to omit the header."""
     if not text: return
-    pattern = r'[\[\(]?WikiID:\s*([a-zA-Z0-9]+)[\]\)]?'
-    display_text = re.sub(pattern, '', text).strip()
-    display_text = re.sub(r'\s{2,}', ' ', display_text)
-    st.markdown(display_text)
-    citations = re.findall(pattern, text)
-    if citations:
-        cit_cols = st.columns([0.15] * 5 + [0.25])
-        for i, insight_id in enumerate(citations[:5]):
-            with cit_cols[i]:
-                if st.button("📚 Wiki", key=f"cit_{insight_id}_{key_suffix}_{i}", type="secondary"):
-                    st.session_state.active_citation = insight_id.lower()
+    ids = _extract_citation_ids(text)
+    if not ids:
+        return
+    # Keyed container so the compact citation-chip CSS (.st-key-wikicite…) applies here only.
+    with st.container(key=f"wikicite_{key_suffix}"):
+        if caption:
+            st.caption(caption)
+        insights = [(cid, get_wiki_insight(doctor_id, cid)) for cid in ids[:8]]
+        has_popover = hasattr(st, "popover")
+        cols = st.columns(min(len(insights), 4))
+        for i, (cid, insight) in enumerate(insights):
+            with cols[i % len(cols)]:
+                label = f"📚 {_citation_label(insight, fallback=cid)}"
+                if has_popover:
+                    with st.popover(label, use_container_width=True):
+                        _render_citation_detail(insight, cid, doctor_id)
+                elif st.button(label, key=f"cit_{cid}_{key_suffix}_{i}", type="secondary"):
+                    st.session_state.active_citation = cid
                     st.rerun()
 
+
+def render_content_with_citations(text: str, key_suffix: str, doctor_id: str = "default", chips_only: bool = False):
+    """Renders agent text with WikiID tokens stripped, then the small source chips beneath it.
+
+    chips_only=True skips the body text — use it when the same text is shown in an adjacent
+    editable widget. The chips themselves are delegated to render_citation_chips()."""
+    if not text: return
+    if not chips_only:
+        st.markdown(_strip_citations(text))
+    render_citation_chips(text, key_suffix, doctor_id)
+
+
 def render_wiki_reference_card(doctor_id: str = "default"):
-    """Renders the cited wiki quote in the sticky panel."""
+    """Renders the cited wiki quote in the sticky panel (fallback when popovers unavailable)."""
     insight_id = st.session_state.get("active_citation")
     if not insight_id: return
     insight = get_wiki_insight(doctor_id, insight_id)
     if insight:
         st.markdown(f'<div class="wiki-ref-box">', unsafe_allow_html=True)
         st.markdown(f'<div class="wiki-ref-header">📚 Wiki Reference</div>', unsafe_allow_html=True)
-        st.markdown(f"**{insight['category']}** > {insight['topic']}")
-        st.info(f"*{insight['rule']}*")
+        _render_citation_detail(insight, insight_id, doctor_id)
         if st.button("Close reference", use_container_width=True, type="primary"):
             st.session_state.active_citation = None
             st.rerun()
@@ -702,7 +952,6 @@ with st.sidebar:
             format_func=lambda pid: _id_to_name.get(pid, pid),
             key="patient_selectbox",
         )
-        llm_provider = st.radio("LLM Provider", options=["Anthropic", "Gemini"], index=0)
 
         if st.session_state.get("_active_patient_id") != patient_id:
             for _k in _ACTION_STATE_KEYS + ["workflow_complete", "workflow_outputs",
@@ -719,6 +968,11 @@ with st.sidebar:
             if st.button("Reset context", use_container_width=True):
                 PatientContext.clear(patient_id)
                 _clear_action_states(patient_id)
+                # Also drop the in-session keys that drive the "Ready for Review" section,
+                # otherwise it keeps rendering from stale session state after the rerun.
+                for _k in ["workflow_complete", "workflow_outputs", "active_workflow",
+                           "open_dialog", "episode_wiki_saved", "show_checkin"]:
+                    st.session_state.pop(_k, None)
                 wf_cache = _CACHE_DIR / f"{patient_id}_workflow_cache.json"
                 if wf_cache.exists(): wf_cache.unlink()
                 st.rerun()
@@ -1293,13 +1547,15 @@ def _dialog_ci_meds(med_actions: list):
     selected = []
     for i, action in enumerate(med_actions):
         st.markdown(f"{_URGENCY_ICON.get(action.get('urgency', 'routine'), '⚪')} **{action.get('title', '?')}**")
-        if action.get("detail"): st.caption(action["detail"])
+        if action.get("detail"):
+            st.caption(_strip_citations(action["detail"]))
         edited = st.text_input("Order text", value=action.get("title", ""), key=f"ci_med_edit_{i}", label_visibility="collapsed")
         if st.checkbox("Include in order", value=True, key=f"ci_med_chk_{i}"): selected.append({**action, "title": edited})
         st.divider()
     if st.button(f"Send {len(selected)} Order(s) to Epic", type="primary", use_container_width=True, disabled=not selected):
         st.session_state["ci_meds_sent"] = True; st.session_state.pop("open_dialog", None)
         st.rerun()
+    render_citation_chips(" ".join(a.get("detail", "") for a in med_actions), "ci_meds")
 
 @st.dialog("🧪 Lab Orders", width="large")
 def _dialog_ci_labs(lab_actions: list):
@@ -1307,20 +1563,23 @@ def _dialog_ci_labs(lab_actions: list):
     selected = []
     for i, action in enumerate(lab_actions):
         if st.checkbox(f"{_URGENCY_ICON.get(action.get('urgency', 'routine'), '⚪')} **{action.get('title', '?')}**", value=True, key=f"ci_lab_chk_{i}"): selected.append(action)
-        if action.get("detail"): st.caption(f"  {action['detail']}")
+        if action.get("detail"):
+            st.caption(f"  {_strip_citations(action['detail'])}")
     st.divider()
     if st.button(f"Send {len(selected)} Order(s) to Epic", type="primary", use_container_width=True, disabled=not selected):
         st.session_state["ci_labs_sent"] = True; st.session_state.pop("open_dialog", None)
         st.rerun()
+    render_citation_chips(" ".join(a.get("detail", "") for a in lab_actions), "ci_labs")
 
 @st.dialog("📋 Clinical Updates", width="large")
 def _dialog_ci_updates(changes: list, note_actions: list, patient_id: str):
     if changes:
         st.markdown("**What changed:**")
-        for c in changes: st.markdown(f"{_TREND_ICON.get(c.get('trend', ''), '•')} **{c.get('finding', '')}** — {c.get('significance', '')}")
+        for c in changes: st.markdown(f"{_TREND_ICON.get(c.get('trend', ''), '•')} **{c.get('finding', '')}** — {_strip_citations(c.get('significance', ''))}")
         st.divider()
     note_lines = [f"- {c.get('finding', '')}: {c.get('significance', '')}" for c in changes] + [f"- {a.get('title', '')}: {a.get('detail', '')}" for a in note_actions]
-    edited = st.text_area("Patient file update", value="\n".join(note_lines), height=300)
+    note_blob = "\n".join(note_lines)
+    edited = st.text_area("Patient file update", value=_strip_citations(note_blob), height=300)
     c1, c2 = st.columns(2)
     if c1.button("Save to Patient File", type="primary", use_container_width=True):
         _CACHE_DIR.mkdir(parents=True, exist_ok=True)
@@ -1331,6 +1590,7 @@ def _dialog_ci_updates(changes: list, note_actions: list, patient_id: str):
     if c2.button("Email to Patient", use_container_width=True):
         st.session_state["ci_updates_saved"] = True; st.session_state.pop("open_dialog", None)
         st.rerun()
+    render_citation_chips(note_blob, "ci_updates")
 
 def _run_checkin_agent(patient_id: str, llm_provider: str, wiki: str, delta_data: dict):
     backend, model = get_backend(llm_provider)
@@ -1401,9 +1661,9 @@ def _render_rx_card(idx: int, rx: dict):
         c4, c5, c6 = st.columns(3)
         freq, qty, ref = c4.text_input("Frequency", value=rx.get("frequency", ""), key=f"rx_freq_{idx}"), c5.text_input("Quantity", value=rx.get("quantity", ""), key=f"rx_qty_{idx}"), c6.text_input("Refills", value=rx.get("refills", "0"), key=f"rx_ref_{idx}")
         ind = st.text_input("Indication", value=rx.get("indication", ""), key=f"rx_ind_{idx}")
-        st.text_area("Agent notes / monitoring", value=rx.get("agent_notes", ""), height=80, key=f"rx_notes_{idx}")
-        if rx.get("drug_info_summary"): st.caption(f"ℹ️ **Drug info:** {rx['drug_info_summary']}")
-        if rx.get("pa_notes"): (st.warning if pa_req else st.caption)(f"**PA:** {rx['pa_notes']}")
+        st.text_area("Agent notes / monitoring", value=_strip_citations(rx.get("agent_notes", "")), height=80, key=f"rx_notes_{idx}")
+        if rx.get("drug_info_summary"): st.caption(f"ℹ️ **Drug info:** {_strip_citations(rx['drug_info_summary'])}")
+        if rx.get("pa_notes"): (st.warning if pa_req else st.caption)(f"**PA:** {_strip_citations(rx['pa_notes'])}")
         if rx.get("alternatives"): st.caption("**Alternatives:** " + " · ".join(rx["alternatives"]))
         b1, b2, _ = st.columns([1, 1, 4])
         if b1.button("✓ Approve", key=f"approve_{idx}", type="primary"):
@@ -1436,6 +1696,10 @@ def _dialog_prescriptions():
         st.session_state["approved_orders"] = []
         st.session_state.pop("open_dialog", None)
         st.rerun()
+    _rx_cites = " ".join(
+        f"{d.get('agent_notes', '')} {d.get('drug_info_summary', '')} {d.get('pa_notes', '')}"
+        for d in drafts)
+    render_citation_chips(_rx_cites, "rx_all")
 
 @st.dialog("🧪 Lab Orders", width="large")
 def _dialog_labs(lab_actions: list):
@@ -1443,16 +1707,18 @@ def _dialog_labs(lab_actions: list):
     st.caption("Select orders to send."); st.divider(); selected, icon_map = [], {"now": "🔴", "today": "🟡", "routine": "⚪"}
     for i, a in enumerate(lab_actions):
         if st.checkbox(f"{icon_map.get(a.get('urgency', 'routine'), '⚪')} **{a.get('title', '?')}**", value=True, key=f"lab_chk_{i}"): selected.append(a)
-        if a.get("detail"): st.caption(f"  {a['detail']}")
+        if a.get("detail"):
+            st.caption(f"  {_strip_citations(a['detail'])}")
     st.divider()
     if st.button(f"Send {len(selected)} Order(s) to Epic", type="primary", use_container_width=True, disabled=not selected):
         st.session_state["labs_sent_to_epic"] = True
         st.session_state.pop("open_dialog", None)
         st.rerun()
+    render_citation_chips(" ".join(a.get("detail", "") for a in lab_actions), "labs_all")
 
 @st.dialog("📋 Admission Note", width="large")
 def _dialog_notes(note_text: str, patient_id: str):
-    edited = st.text_area("", value=note_text, height=450, label_visibility="collapsed", key="dialog_note_ta")
+    edited = st.text_area("", value=_strip_citations(note_text), height=450, label_visibility="collapsed", key="dialog_note_ta")
     c1, c2 = st.columns(2)
     if c1.button("Save to Patient File", type="primary", use_container_width=True):
         _CACHE_DIR.mkdir(parents=True, exist_ok=True); (_CACHE_DIR / f"{patient_id}_note.md").write_text(edited)
@@ -1463,10 +1729,22 @@ def _dialog_notes(note_text: str, patient_id: str):
         st.session_state["note_emailed"] = True
         st.session_state.pop("open_dialog", None)
         st.rerun()
+    render_citation_chips(note_text, "adm_note")
 
 # ---------------------------------------------------------------------------
 # Results Rendering
 # ---------------------------------------------------------------------------
+
+# Agent reasoning outputs surfaced (in workflow order) in the durable admission review.
+_ADMISSION_AGENT_NOTES = [
+    ("chart_review", "📋 Chart Review"),
+    ("lab_interpretation", "🧬 Lab Interpretation"),
+    ("ed_note_synthesis", "📝 ED Note Synthesis"),
+    ("consultant_routing", "🏥 Consultant Routing"),
+    ("safety_check", "⚠️ Safety Check"),
+    ("wiki_drift_check", "🔍 Wiki Alignment"),
+]
+
 
 def render_admission_results(outputs: dict, patient_name: str, patient_id: str, pending_all: list):
     from agents.admission.prescription import PrescriptionDraftAgent as _PxAgent
@@ -1496,8 +1774,19 @@ def render_admission_results(outputs: dict, patient_name: str, patient_id: str, 
     if _od == "rx": _dialog_prescriptions()
     elif _od == "labs": _dialog_labs(lab_actions)
     elif _od == "note": _dialog_notes(note_text, patient_id)
-    if "safety_check" in outputs:
-        with st.expander("Safety Check", expanded=False): st.markdown(outputs["safety_check"])
+
+    # Durable record of every agent's reasoning so the physician can review the full
+    # analysis after completion (the live run trace is gone once the workflow reruns).
+    # Source chips link each suggestion back to the guideline/protocol — with the date it
+    # was added to the wiki — behind it.
+    if any(outputs.get(step) for step, _ in _ADMISSION_AGENT_NOTES):
+        st.divider()
+        st.markdown("### 📚 Agent Notes & Analysis")
+        st.caption("Review each agent's reasoning and recommendations. Source chips link to the guideline or protocol behind each suggestion.")
+        for step_name, title in _ADMISSION_AGENT_NOTES:
+            if outputs.get(step_name):
+                with st.expander(title, expanded=False):
+                    render_content_with_citations(outputs[step_name], f"adm_{step_name}")
 
 def _render_episode_learnings(pending_all: list, patient_name: str, doctor_id: str = "default"):
     if not pending_all: return
@@ -1517,17 +1806,18 @@ def _render_episode_learnings(pending_all: list, patient_name: str, doctor_id: s
 @st.dialog("📝 Discharge Summary", width="large")
 def _dialog_dc_summary(text: str):
     st.caption("Edit and copy into Epic.")
-    edited = st.text_area("", value=text, height=420, label_visibility="collapsed", key="dc_sum_ta")
+    edited = st.text_area("", value=_strip_citations(text), height=420, label_visibility="collapsed", key="dc_sum_ta")
     if st.button("Copy to Epic", type="primary", use_container_width=True):
         st.session_state["dc_summary_done"] = True
         st.session_state.pop("open_dialog", None)
         st.rerun()
+    render_citation_chips(text, "dc_summary")
 
 
 @st.dialog("📬 Patient Instructions", width="large")
 def _dialog_dc_instructions(text: str):
     st.caption("Review, then print or send to patient portal.")
-    edited = st.text_area("", value=text, height=420, label_visibility="collapsed", key="dc_instr_ta")
+    edited = st.text_area("", value=_strip_citations(text), height=420, label_visibility="collapsed", key="dc_instr_ta")
     c1, c2 = st.columns(2)
     if c1.button("Print", type="primary", use_container_width=True):
         st.session_state["dc_instructions_done"] = True
@@ -1537,6 +1827,7 @@ def _dialog_dc_instructions(text: str):
         st.session_state["dc_instructions_done"] = True
         st.session_state.pop("open_dialog", None)
         st.rerun()
+    render_citation_chips(text, "dc_instructions")
 
 
 @st.dialog("✅ Sign-off Checklist", width="large")
@@ -1546,7 +1837,7 @@ def _dialog_dc_checklist(text: str):
     lines = [l for l in text.splitlines() if l.strip()]
     all_checked = True
     for i, line in enumerate(lines):
-        clean = line.lstrip("-•[ ] ").strip()
+        clean = _strip_citations(line.lstrip("-•[ ] ").strip())
         if clean:
             checked = st.checkbox(clean, key=f"dc_chk_{i}")
             if not checked:
@@ -1558,16 +1849,18 @@ def _dialog_dc_checklist(text: str):
         st.rerun()
     if not all_checked:
         st.caption("Check all items to enable sign-off.")
+    render_citation_chips(text, "dc_checklist")
 
 
 @st.dialog("🛡️ Safety Check", width="large")
 def _dialog_dc_safety(text: str):
-    st.markdown(text)
+    st.markdown(_strip_citations(text))
     st.divider()
     if st.button("Acknowledged", type="primary", use_container_width=True):
         st.session_state["dc_safety_done"] = True
         st.session_state.pop("open_dialog", None)
         st.rerun()
+    render_citation_chips(text, "dc_safety")
 
 
 def render_discharge_results(outputs: dict, pending_all: list, patient_name: str = ""):
@@ -1664,6 +1957,20 @@ def render_discharge_results(outputs: dict, pending_all: list, patient_name: str
 # ---------------------------------------------------------------------------
 # Main Execution
 # ---------------------------------------------------------------------------
+
+# ── Settings gear (upper-right) ────────────────────────────────────────────
+# LLM Provider lives behind a ⚙️ popover that opens on click and closes when
+# the icon is pressed again or the user clicks away / hits Close.
+if "llm_provider" not in st.session_state:
+    st.session_state["llm_provider"] = "Anthropic"
+
+_spacer, _settings_col = st.columns([11, 1])
+with _settings_col:
+    with st.container(key="settingsgear"):
+        with st.popover("⚙️", width="stretch"):
+            st.markdown("**Settings**")
+            st.radio("LLM Provider", options=["Anthropic", "Gemini"], key="llm_provider")
+llm_provider = st.session_state["llm_provider"]
 
 if app_mode == "Patient Workflows" and st.session_state.get("active_citation"):
     col_main, col_right = st.columns([3, 1])

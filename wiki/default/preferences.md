@@ -30,6 +30,10 @@
 - Separate warning signs into 'Go to ER immediately' vs. 'Call doctor within 24 hours' tiers
 - Explicitly instruct patient to leave with booked appointment dates/times rather than just referrals
 - Address caregiver by name (e.g., daughter) and instruct patient to share the discharge paper with them when relevant
+### Patient instructions - appointment booking emphasis
+- Patient instructions should include an explicit reminder paragraph directing the patient (and named caregiver) to confirm appointments are booked with dates/times before leaving the hospital, not just referred.
+  - Rationale: Empowers patient/caregiver to act as a final check against discharge with unbooked follow-up, especially when living alone with engaged family.
+  - Added: 2026-06-02
 
 ## Documentation
 ### Documentation preferences
@@ -114,6 +118,22 @@
 ### Prescription agent_notes content
 - Prescription agent_notes should include: dose rationale (e.g., 2x home PO for IV loop), explicit hold/escalation triggers with numerical thresholds, discharge transition plan (when to resume home regimen), and PA workflow timing for high-risk agents.
   - Rationale: Consolidating dose logic, safety thresholds, and discharge planning per-medication reduces handoff errors and discharge delays.
+### Prescription PA notes
+- When a formulary tool flags PA on an inpatient-only medication, explicitly annotate in pa_notes that the flag is a 'false positive' due to Part A DRG bundling, and distinguish from any genuine outpatient Part D PA risk at discharge.
+  - Rationale: Disambiguates spurious PA flags from real discharge-time coverage barriers and prevents downstream workflow confusion.
+  - Added: 2026-06-02
+### Drug info summary content
+- Prescription drug_info_summary should explicitly enumerate drug-drug and drug-disease interactions specific to the current patient (e.g., carvedilol masking hypoglycemia in T2DM, furosemide-induced hypokalemia worsened by insulin, lisinopril potentiating hypotension with diuresis) rather than generic class warnings.
+  - Rationale: Patient-specific interaction surfacing is more actionable for the care team than generic class-level warnings.
+  - Added: 2026-06-02
+### Truncated draft handling
+- Discharge summaries that terminate mid-sentence or mid-citation (e.g., '[WikiID: b3') must be explicitly flagged as truncated in safety review and blocked from sign-off — do not infer missing sections from prior context.
+  - Rationale: Truncated drafts may omit critical sections (Discharge Medications, Follow-Up, Warning Signs); silent completion by reviewer risks fabricating content not authored by the physician.
+  - Added: 2026-06-02
+### Carry-forward check section
+- Transitional Issues drafts should include an explicit 'Carry-Forward Check' section noting prior discharge transitional items reviewed, even if none are unresolved.
+  - Rationale: Explicit documentation of the carry-forward review confirms the check was performed, rather than leaving its absence ambiguous.
+  - Added: 2026-06-02
 
 ## Workflow
 ### Workflow preferences
@@ -143,3 +163,10 @@
 
 ### Safety/Verification
 - Include a 'Safety Review' or 'Flag' section in handover/charting summaries to explicitly call out unverified high-stakes items or missing administrative data (e.g., admitting physician, disposition)
+
+## Discharge Planning
+
+### Multipurpose cardiology visit framing
+- When a single outpatient cardiology visit will address multiple agenda items (e.g., CRT-D candidacy + valve management + GDMT gap closure), explicitly enumerate all agenda items in the transitional issues entry for that visit.
+  - Rationale: Enumerating the agenda ensures the consulting cardiologist addresses all items in one visit and prevents items from being deferred across multiple appointments.
+  - Added: 2026-06-02

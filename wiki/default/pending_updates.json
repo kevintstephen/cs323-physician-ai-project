@@ -1,49 +1,49 @@
 [
   {
     "type": "protocol",
-    "category": "Medications",
-    "header": "Inpatient PA flag interpretation",
-    "content": "- Treat prior authorization flags on inpatient-only medications (e.g., SQ heparin, insulin lispro) as formulary-database artifacts rather than true coverage barriers, since inpatient meds are bundled under Part A DRG payment; document this explicitly in prescription notes.\n  - Rationale: PA flags from formulary tools generate false positives for inpatient meds covered under bundled Part A payment, creating workflow noise; outpatient Part D PA only applies if medication is continued at discharge.\n- If discharge on insulin is anticipated, preemptively switch to regular insulin sliding scale (Tier 1 formulary) rather than lispro to avoid Part D PA delay at discharge.\n  - Rationale: Lispro typically requires Part D PA or step therapy outpatient; early formulary substitution prevents discharge delay.\n  - Evidence: [WikiID: 435009]",
+    "category": "Diseases/Issues",
+    "header": "Ethacrynic acid as furosemide alternative in sulfa allergy",
+    "content": "- When ordering ethacrynic acid as a standby alternative to furosemide pending sulfa cross-reactivity determination, dose ethacrynic acid 50 mg IV as approximately equivalent to furosemide 80 mg IV; do NOT co-administer the two agents due to additive ototoxicity.\n  - Rationale: Ethacrynic acid is the only true non-sulfonamide IV loop diuretic; co-administration with furosemide compounds ototoxicity risk, especially in CKD.\n  - Interpretation: Order as standby pending pharmacy/attending cross-reactivity check; activate only if true sulfa reaction confirmed.\n- Discontinue ethacrynic acid if severe watery diarrhea develops; monitor same electrolyte and renal parameters as for furosemide (STAT Mg/Phos, daily BMP, goal UOP).\n  - Rationale: Profound GI side effects are a known dose-limiting toxicity distinct from furosemide; electrolyte and renal monitoring requirements are unchanged.",
     "rules": [
       {
-        "text": "Treat prior authorization flags on inpatient-only medications (e.g., SQ heparin, insulin lispro) as formulary-database artifacts rather than true coverage barriers, since inpatient meds are bundled under Part A DRG payment; document this explicitly in prescription notes.",
+        "text": "When ordering ethacrynic acid as a standby alternative to furosemide pending sulfa cross-reactivity determination, dose ethacrynic acid 50 mg IV as approximately equivalent to furosemide 80 mg IV; do NOT co-administer the two agents due to additive ototoxicity.",
         "attributes": {
-          "Rationale": "PA flags from formulary tools generate false positives for inpatient meds covered under bundled Part A payment, creating workflow noise; outpatient Part D PA only applies if medication is continued at discharge."
+          "Rationale": "Ethacrynic acid is the only true non-sulfonamide IV loop diuretic; co-administration with furosemide compounds ototoxicity risk, especially in CKD.",
+          "Interpretation": "Order as standby pending pharmacy/attending cross-reactivity check; activate only if true sulfa reaction confirmed."
         }
       },
       {
-        "text": "If discharge on insulin is anticipated, preemptively switch to regular insulin sliding scale (Tier 1 formulary) rather than lispro to avoid Part D PA delay at discharge.",
+        "text": "Discontinue ethacrynic acid if severe watery diarrhea develops; monitor same electrolyte and renal parameters as for furosemide (STAT Mg/Phos, daily BMP, goal UOP).",
         "attributes": {
-          "Rationale": "Lispro typically requires Part D PA or step therapy outpatient; early formulary substitution prevents discharge delay.",
-          "Evidence": "[WikiID: 435009]"
+          "Rationale": "Profound GI side effects are a known dose-limiting toxicity distinct from furosemide; electrolyte and renal monitoring requirements are unchanged."
         }
       }
     ]
   },
   {
     "type": "protocol",
-    "category": "Diseases/Issues",
-    "header": "HFrEF - beta-blocker uptitration deferral",
-    "content": "- When patient is admitted on submaximal carvedilol dose (e.g., 12.5 mg BID, below target 25 mg BID for HFrEF), explicitly defer up-titration to outpatient cardiology once euvolemic and stable rather than initiating inpatient titration during active diuresis.\n  - Rationale: Inpatient beta-blocker uptitration during active decongestion risks low-output state and hemodynamic instability; outpatient titration with stable volume status is safer.",
+    "category": "Medications",
+    "header": "Statin safety in elderly CKD",
+    "content": "- Continue high-intensity statin (e.g., atorvastatin 40 mg) without dose adjustment for CKD3, but counsel and monitor for muscle symptoms given elevated myopathy/rhabdomyolysis risk in age >65 and CKD; check CK if symptoms develop.\n  - Rationale: High-intensity statin remains indicated for severe multi-vessel CAD secondary prevention; CKD3 and age >65 elevate myopathy risk without requiring dose reduction.",
     "rules": [
       {
-        "text": "When patient is admitted on submaximal carvedilol dose (e.g., 12.5 mg BID, below target 25 mg BID for HFrEF), explicitly defer up-titration to outpatient cardiology once euvolemic and stable rather than initiating inpatient titration during active diuresis.",
+        "text": "Continue high-intensity statin (e.g., atorvastatin 40 mg) without dose adjustment for CKD3, but counsel and monitor for muscle symptoms given elevated myopathy/rhabdomyolysis risk in age >65 and CKD; check CK if symptoms develop.",
         "attributes": {
-          "Rationale": "Inpatient beta-blocker uptitration during active decongestion risks low-output state and hemodynamic instability; outpatient titration with stable volume status is safer."
+          "Rationale": "High-intensity statin remains indicated for severe multi-vessel CAD secondary prevention; CKD3 and age >65 elevate myopathy risk without requiring dose reduction."
         }
       }
     ]
   },
   {
     "type": "protocol",
-    "category": "Diseases/Issues",
-    "header": "ASA + prophylactic heparin co-administration",
-    "content": "- When continuing home aspirin alongside prophylactic SQ heparin for VTE prophylaxis, confirm no active bleeding before sign-off; the combination is acceptable at prophylactic heparin dosing but warrants explicit documented assessment.\n  - Rationale: Combined antiplatelet + anticoagulant therapy modestly elevates bleeding risk; explicit pre-sign-off check prevents oversight in patients with CAD on chronic ASA.",
+    "category": "Medications",
+    "header": "Heparin prophylaxis monitoring",
+    "content": "- When prophylactic SQ unfractionated heparin is continued alongside home ACEi, monitor BMP for additive hyperkalemia risk; also monitor platelet trend for HIT.\n  - Rationale: UFH causes hyperkalemia via aldosterone suppression \u2014 additive with ACEi-driven K+ retention, especially in CKD; HIT remains a standard UFH safety consideration.",
     "rules": [
       {
-        "text": "When continuing home aspirin alongside prophylactic SQ heparin for VTE prophylaxis, confirm no active bleeding before sign-off; the combination is acceptable at prophylactic heparin dosing but warrants explicit documented assessment.",
+        "text": "When prophylactic SQ unfractionated heparin is continued alongside home ACEi, monitor BMP for additive hyperkalemia risk; also monitor platelet trend for HIT.",
         "attributes": {
-          "Rationale": "Combined antiplatelet + anticoagulant therapy modestly elevates bleeding risk; explicit pre-sign-off check prevents oversight in patients with CAD on chronic ASA."
+          "Rationale": "UFH causes hyperkalemia via aldosterone suppression \u2014 additive with ACEi-driven K+ retention, especially in CKD; HIT remains a standard UFH safety consideration."
         }
       }
     ]
@@ -51,13 +51,13 @@
   {
     "type": "preference",
     "category": "Documentation",
-    "header": "Prescription PA notes",
-    "content": "- When a formulary tool flags PA on an inpatient-only medication, explicitly annotate in pa_notes that the flag is a 'false positive' due to Part A DRG bundling, and distinguish from any genuine outpatient Part D PA risk at discharge.\n  - Rationale: Disambiguates spurious PA flags from real discharge-time coverage barriers and prevents downstream workflow confusion.",
+    "header": "Standby/conditional medication orders",
+    "content": "- When a safety check (e.g., sulfa cross-reactivity) is pending, place the alternative agent as an explicit STANDBY order with activation criteria clearly stated in agent_notes, rather than waiting until the check fails to write the order.\n  - Rationale: Pre-staging the alternative prevents delays in diuresis if the safety check identifies a true contraindication; activation criteria in agent_notes make the conditional trigger unambiguous for nursing and pharmacy.",
     "rules": [
       {
-        "text": "When a formulary tool flags PA on an inpatient-only medication, explicitly annotate in pa_notes that the flag is a 'false positive' due to Part A DRG bundling, and distinguish from any genuine outpatient Part D PA risk at discharge.",
+        "text": "When a safety check (e.g., sulfa cross-reactivity) is pending, place the alternative agent as an explicit STANDBY order with activation criteria clearly stated in agent_notes, rather than waiting until the check fails to write the order.",
         "attributes": {
-          "Rationale": "Disambiguates spurious PA flags from real discharge-time coverage barriers and prevents downstream workflow confusion."
+          "Rationale": "Pre-staging the alternative prevents delays in diuresis if the safety check identifies a true contraindication; activation criteria in agent_notes make the conditional trigger unambiguous for nursing and pharmacy."
         }
       }
     ]
@@ -65,13 +65,13 @@
   {
     "type": "preference",
     "category": "Documentation",
-    "header": "Drug info summary content",
-    "content": "- Prescription drug_info_summary should explicitly enumerate drug-drug and drug-disease interactions specific to the current patient (e.g., carvedilol masking hypoglycemia in T2DM, furosemide-induced hypokalemia worsened by insulin, lisinopril potentiating hypotension with diuresis) rather than generic class warnings.\n  - Rationale: Patient-specific interaction surfacing is more actionable for the care team than generic class-level warnings.",
+    "header": "Drug info summary - co-administration warnings",
+    "content": "- Prescription drug_info_summary should explicitly flag dangerous co-administration pairs within the current patient's medication list (e.g., furosemide + ethacrynic acid additive ototoxicity, UFH + ACEi additive hyperkalemia, ASA + prophylactic heparin bleeding) rather than relying on generic class warnings.\n  - Rationale: Patient-specific co-administration warnings are more actionable than generic class warnings and reduce risk of stacked toxicities being missed during reconciliation.",
     "rules": [
       {
-        "text": "Prescription drug_info_summary should explicitly enumerate drug-drug and drug-disease interactions specific to the current patient (e.g., carvedilol masking hypoglycemia in T2DM, furosemide-induced hypokalemia worsened by insulin, lisinopril potentiating hypotension with diuresis) rather than generic class warnings.",
+        "text": "Prescription drug_info_summary should explicitly flag dangerous co-administration pairs within the current patient's medication list (e.g., furosemide + ethacrynic acid additive ototoxicity, UFH + ACEi additive hyperkalemia, ASA + prophylactic heparin bleeding) rather than relying on generic class warnings.",
         "attributes": {
-          "Rationale": "Patient-specific interaction surfacing is more actionable for the care team than generic class-level warnings."
+          "Rationale": "Patient-specific co-administration warnings are more actionable than generic class warnings and reduce risk of stacked toxicities being missed during reconciliation."
         }
       }
     ]
