@@ -107,6 +107,22 @@
 ### Loop diuretic safety in sulfa allergy
 - When a patient with documented sulfa allergy has already received furosemide in the ED without a cross-reactivity check, do not defer the safety check — verify with pharmacy/attending BEFORE the next scheduled dose, and switch to ethacrynic acid if true reaction history.
   - Rationale: Continuing furosemide pending later review exposes the patient to repeated allergen doses; cross-reactivity must be resolved pre-dose, not flagged for later.
+### HFrEF - beta-blocker uptitration deferral
+- When patient is admitted on submaximal carvedilol dose (e.g., 12.5 mg BID, below target 25 mg BID for HFrEF), explicitly defer up-titration to outpatient cardiology once euvolemic and stable rather than initiating inpatient titration during active diuresis.
+  - Rationale: Inpatient beta-blocker uptitration during active decongestion risks low-output state and hemodynamic instability; outpatient titration with stable volume status is safer.
+  - Added: 2026-06-02
+### ASA + prophylactic heparin co-administration
+- When continuing home aspirin alongside prophylactic SQ heparin for VTE prophylaxis, confirm no active bleeding before sign-off; the combination is acceptable at prophylactic heparin dosing but warrants explicit documented assessment.
+  - Rationale: Combined antiplatelet + anticoagulant therapy modestly elevates bleeding risk; explicit pre-sign-off check prevents oversight in patients with CAD on chronic ASA.
+  - Added: 2026-06-02
+### Recurrent ADHF - dry weight creep trajectory
+- For patients with ≥3 ADHF admissions in 12 months with documented dry-weight creep across admissions, formally enroll in CHF disease management/transitional care clinic AND revisit code status/goals of care during the current admission — do not defer both to outpatient.
+  - Rationale: Accelerating trajectory with dry-weight creep signals worsening disease; combining disease management enrollment with goals-of-care revisit captures both the medical and prognostic dimensions before the next decompensation.
+  - Added: 2026-06-02
+### Anemia in HFrEF - timing of workup
+- Initiate anemia workup (iron studies, TSH) within 4 weeks of discharge via PCP for HFrEF patients with Hgb 11-12 g/dL; if iron-deficient, refer to cardiology for IV iron infusion given mortality/hospitalization benefit.
+  - Rationale: Outpatient workup within a defined 4-week window prevents the anemia issue from being lost to follow-up while avoiding inpatient workup during active diuresis when values may be confounded.
+  - Added: 2026-06-02
 
 ## Labs/Blood Work
 ### Sodium abnormalities
@@ -185,6 +201,14 @@
 ### ARNI transition from ACEi
 - If switching from ACEi to ARNI per cardiology recommendation, require a 36-hour washout period and initiate Part D prior authorization workflow at least 48h before anticipated discharge.
   - Rationale: Concomitant ACEi/ARNI use causes angioedema risk; ARNI also has high PA likelihood under Medicare Part D and is a common cause of discharge delay.
+### Inpatient PA flag interpretation
+- Treat prior authorization flags on inpatient-only medications (e.g., SQ heparin, insulin lispro) as formulary-database artifacts rather than true coverage barriers, since inpatient meds are bundled under Part A DRG payment; document this explicitly in prescription notes.
+  - Rationale: PA flags from formulary tools generate false positives for inpatient meds covered under bundled Part A payment, creating workflow noise; outpatient Part D PA only applies if medication is continued at discharge.
+  - Added: 2026-06-02
+- If discharge on insulin is anticipated, preemptively switch to regular insulin sliding scale (Tier 1 formulary) rather than lispro to avoid Part D PA delay at discharge.
+  - Rationale: Lispro typically requires Part D PA or step therapy outpatient; early formulary substitution prevents discharge delay.
+  - Evidence: [WikiID: 435009]
+  - Added: 2026-06-02
 
 ## Cardiology
 

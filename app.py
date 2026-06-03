@@ -419,6 +419,27 @@ div[data-testid="stVerticalBlock"],
 .pt-chip.alert { background: rgba(255,59,48,0.1); color: #C0392B; }
 .pt-date { font-size: 0.68rem; color: rgba(60,60,67,0.38); margin-bottom: 0.4rem; }
 .kanban-empty { font-size: 0.78rem; color: rgba(60,60,67,0.3); text-align: center; padding: 1.5rem 0; }
+
+/* ── Settings gear popover trigger (borderless icon) ──── */
+[data-testid="stPopover"] > button,
+[data-testid="stPopover"] > div > button {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0.1rem 0.3rem !important;
+    color: rgba(60,60,67,0.55) !important;
+}
+[data-testid="stPopover"] button:hover {
+    background: transparent !important;
+    color: #3C3C43 !important;
+}
+/* The emoji glyph size is driven by the label element's font-size, not the
+   button's — bump it 20% there. */
+[data-testid="stPopover"] button p,
+[data-testid="stPopover"] button div,
+[data-testid="stPopover"] button span {
+    font-size: 1.12em !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -688,7 +709,6 @@ with st.sidebar:
             format_func=lambda pid: _id_to_name.get(pid, pid),
             key="patient_selectbox",
         )
-        llm_provider = st.radio("LLM Provider", options=["Anthropic", "Gemini"], index=0)
 
         if st.session_state.get("_active_patient_id") != patient_id:
             for _k in _ACTION_STATE_KEYS + ["workflow_complete", "workflow_outputs",
@@ -1654,6 +1674,19 @@ def render_discharge_results(outputs: dict, pending_all: list, patient_name: str
 # ---------------------------------------------------------------------------
 # Main Execution
 # ---------------------------------------------------------------------------
+
+# ── Settings gear (upper-right) ────────────────────────────────────────────
+# LLM Provider lives behind a ⚙️ popover that opens on click and closes when
+# the icon is pressed again or the user clicks away / hits Close.
+if "llm_provider" not in st.session_state:
+    st.session_state["llm_provider"] = "Anthropic"
+
+_spacer, _settings_col = st.columns([11, 1])
+with _settings_col:
+    with st.popover("⚙️", width="stretch"):
+        st.markdown("**Settings**")
+        st.radio("LLM Provider", options=["Anthropic", "Gemini"], key="llm_provider")
+llm_provider = st.session_state["llm_provider"]
 
 if app_mode == "Patient Workflows" and st.session_state.get("active_citation"):
     col_main, col_right = st.columns([3, 1])
