@@ -1073,6 +1073,43 @@ def render_saved_guidelines(doctor_id: str = "default"):
                 if attrs.get("Physician Notes"): st.markdown(f"**My Interpretation:** {attrs['Physician Notes']}")
                 if attrs.get("Rationale"): st.markdown(f"**Rationale:** {attrs['Rationale']}")
                 st.caption(_format_added(attrs[ADDED_KEY]) if attrs.get(ADDED_KEY) else "🗓 Date not recorded")
+
+                with st.expander("✏️ Edit", expanded=False):
+                    with st.form(key=f"ed_gl_form_{rid}"):
+                        ec1, ec2 = st.columns(2)
+                        e_cat = ec1.text_input("Category", value=s["category"], key=f"ed_cat_{rid}")
+                        e_topic = ec2.text_input("Topic", value=s["topic"], key=f"ed_topic_{rid}")
+                        e_text = st.text_input("Title / Source", value=r["text"], key=f"ed_text_{rid}")
+                        e_keyrec = st.text_input("Key Recommendation", value=attrs.get("Key Recommendation", ""), key=f"ed_keyrec_{rid}")
+                        e_src = st.text_input("Source", value=attrs.get("Source", ""), key=f"ed_src_{rid}")
+                        e_url = st.text_input("URL", value=attrs.get("URL", ""), key=f"ed_url_{rid}")
+                        _dec_opts = ["Not set", "Adopted", "Deferred", "Under review"]
+                        _cur_dec = (attrs.get("Decision") or "").strip()
+                        _dec_idx = next((i for i, o in enumerate(_dec_opts) if o.lower() == _cur_dec.lower()), 0)
+                        e_dec = st.selectbox("Decision", _dec_opts, index=_dec_idx, key=f"ed_dec_{rid}")
+                        e_notes = st.text_area("My Interpretation (Physician Notes)", value=attrs.get("Physician Notes", ""), key=f"ed_notes_{rid}")
+                        e_rat = st.text_area("Rationale", value=attrs.get("Rationale", ""), key=f"ed_rat_{rid}")
+                        if st.form_submit_button("💾 Save changes", type="primary"):
+                            if not e_text.strip():
+                                st.error("Title / Source cannot be empty.")
+                            else:
+                                merged = {}
+                                if e_keyrec.strip(): merged["Key Recommendation"] = e_keyrec.strip()
+                                if e_src.strip(): merged["Source"] = e_src.strip()
+                                if e_url.strip(): merged["URL"] = e_url.strip()
+                                if e_dec != "Not set": merged["Decision"] = e_dec
+                                if e_notes.strip(): merged["Physician Notes"] = e_notes.strip()
+                                if e_rat.strip(): merged["Rationale"] = e_rat.strip()
+                                if attrs.get("File"): merged["File"] = attrs["File"]
+                                # Preserve the original added date through the edit.
+                                if attrs.get(ADDED_KEY): merged[ADDED_KEY] = attrs[ADDED_KEY]
+                                # Delete-then-save so cleared fields are dropped and any
+                                # category/topic/title change moves the entry cleanly.
+                                delete_guideline(s["category"], s["topic"], r["text"], doctor_id)
+                                save_guideline(e_cat.strip() or s["category"], e_topic.strip() or s["topic"],
+                                               e_text.strip(), merged, doctor_id)
+                                st.success("Guideline updated.")
+                                st.rerun()
                 if st.button("🗑 Delete", key=f"del_gl_{rid}"):
                     delete_guideline(s["category"], s["topic"], r["text"], doctor_id)
                     st.rerun()
