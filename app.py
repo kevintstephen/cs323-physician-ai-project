@@ -1048,23 +1048,46 @@ def render_pending_update_card(i: int, item: dict, doctor_id: str, suffix: str =
             remove_pending_update(doctor_id, i)
             st.rerun()
 
-def render_saved_guidelines(doctor_id: str = "default"):
+def render_saved_guidelines(doctor_id: str = "default", search_query: str = "", col_filter=None):
     """Lists every saved guideline / external source from guidelines.md as a card, so a
-    physician can see what they added (and remove it) right where they add new sources."""
+    physician can see what they added (and remove it) right where they add new sources.
+
+    Honors the shared wiki search box and an optional category filter, matching the other
+    tabs: search_query (already lowercased) matches category/topic/title/attribute text."""
     sections = parse_wiki_sections(get_wiki_file_content(doctor_id, "guidelines.md"))
     if not sections or not any(s["rules"] for s in sections):
         st.caption("No saved literature or external sources yet. Add one below.")
         return
-    # Group entries under their category so each outer category is one collapsible panel
-    # that starts closed (alphabetical order). Cards inside use a toggle-revealed edit form
-    # rather than an expander, since Streamlit forbids nesting expanders.
+
+    all_cats = sorted({s["category"] for s in sections}, key=str.lower)
+    filter_cat = "All"
+    if col_filter is not None:
+        filter_cat = col_filter.selectbox("Filter Guidelines", ["All"] + all_cats, key="filter_guidelines")
+
+    def _matches(s, r):
+        if filter_cat != "All" and s["category"] != filter_cat:
+            return False
+        if not search_query:
+            return True
+        attrs = r.get("attributes", {})
+        haystack = " ".join([s["category"], s["topic"], r["text"], *(str(v) for v in attrs.values())]).lower()
+        return search_query in haystack
+
+    # Group matching entries under their category so each outer category is one collapsible
+    # panel that starts closed (alphabetical order). Cards inside use a toggle-revealed edit
+    # form rather than an expander, since Streamlit forbids nesting expanders.
     cat_map = {}
     for s in sections:
         for r in s["rules"]:
-            cat_map.setdefault(s["category"], []).append((s, r))
+            if _matches(s, r):
+                cat_map.setdefault(s["category"], []).append((s, r))
+    if not cat_map:
+        st.caption("No matching guidelines found.")
+        return
     for cat in sorted(cat_map, key=str.lower):
         members = cat_map[cat]
-        with st.expander(f"📁 {cat}  ·  {len(members)} item(s)", expanded=False):
+        # Auto-open when searching or filtering so matches aren't hidden; else start closed.
+        with st.expander(f"📁 {cat}  ·  {len(members)} item(s)", expanded=bool(search_query) or filter_cat != "All"):
             for s, r in members:
                 attrs = r.get("attributes", {})
                 rid = generate_id(s["category"], s["topic"], r["text"])
@@ -1218,7 +1241,7 @@ def render_wiki_management():
     with tab_prefs: render_wiki_editor("preferences.md", "Preferences")
     with tab_lit:
         st.subheader("📚 My Saved Literature & External Sources")
-        render_saved_guidelines(doctor_id)
+        render_saved_guidelines(doctor_id, search_query, col_filter)
         st.divider()
         st.subheader("🔍 Search Clinical Literature (PubMed)")
         lit_query = st.text_input("Find guidelines or studies...", placeholder="e.g. SGLT2 inhibitors heart failure", key="lit_search_input")
