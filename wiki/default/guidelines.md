@@ -26,9 +26,9 @@
   - Rationale: Standard 30mL/kg bolus risks volume overload in my HF/ESRD population; I defer the fixed volume in favor of weight-adjusted, response-guided resuscitation.
   - Added: 2026-05-27
 
-## Guidelines
-### Diabetes
-- [ID: 993158] Standards of Care in Diabetes- 2026
+## Diabetes
+### Standards of Care
+- [ID: 0d2d97] Standards of Care in Diabetes- 2026
   - Key Recommendation: In adults with type 2 diabetes who have heart failure (HF) (with either reduced or preserved ejection fraction), an SGLT2 inhibitor is recommended for both glycemic management and prevention of HF hospitalizations (irrespective of A1C)
   - URL: https://diabetesjournals.org/care/issue/49/Supplement_1
   - Decision: Adopted
