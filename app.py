@@ -1048,21 +1048,20 @@ def render_pending_update_card(i: int, item: dict, doctor_id: str, suffix: str =
             remove_pending_update(doctor_id, i)
             st.rerun()
 
-def render_saved_guidelines(doctor_id: str = "default", search_query: str = "", col_filter=None):
+def render_saved_guidelines(doctor_id: str = "default", search_query: str = ""):
     """Lists every saved guideline / external source from guidelines.md as a card, so a
     physician can see what they added (and remove it) right where they add new sources.
 
-    Honors the shared wiki search box and an optional category filter, matching the other
-    tabs: search_query (already lowercased) matches category/topic/title/attribute text."""
+    Honors the shared wiki search box and a category filter, matching the other tabs:
+    search_query (already lowercased) matches category/topic/title/attribute text."""
     sections = parse_wiki_sections(get_wiki_file_content(doctor_id, "guidelines.md"))
     if not sections or not any(s["rules"] for s in sections):
         st.caption("No saved literature or external sources yet. Add one below.")
         return
 
     all_cats = sorted({s["category"] for s in sections}, key=str.lower)
-    filter_cat = "All"
-    if col_filter is not None:
-        filter_cat = col_filter.selectbox("Filter Guidelines", ["All"] + all_cats, key="filter_guidelines")
+    # Rendered inside the tab so only this section's filter is shown.
+    filter_cat = st.columns([1, 2])[0].selectbox("Filter Guidelines", ["All"] + all_cats, key="filter_guidelines")
 
     def _matches(s, r):
         if filter_cat != "All" and s["category"] != filter_cat:
@@ -1156,15 +1155,15 @@ def render_wiki_management():
         st.divider()
 
     st.subheader("🖋 Current Wiki Content")
-    col_search, col_filter = st.columns([2, 1])
-    search_query = col_search.text_input("🔍 Search wiki...", "").lower()
+    search_query = st.text_input("🔍 Search wiki...", "", key="wiki_search").lower()
     tab_protocols, tab_prefs, tab_lit = st.tabs(["📋 Clinical Protocols", "⚙️ Doctor Preferences", "📚 Literature & Guidelines"])
     
     def render_wiki_editor(filename: str, title: str):
         content = get_wiki_file_content(doctor_id, filename)
         sections = parse_wiki_sections(content)
         categories = sorted(list(set(s['category'] for s in sections)))
-        filter_cat = col_filter.selectbox(f"Filter {title}", ["All"] + categories, key=f"filter_{filename}")
+        # Rendered inside the tab so only the active section's filter is shown.
+        filter_cat = st.columns([1, 2])[0].selectbox(f"Filter {title}", ["All"] + categories, key=f"filter_{filename}")
         filtered = [s for s in sections if (filter_cat == "All" or s['category'] == filter_cat) and (search_query in s['category'].lower() or search_query in s['topic'].lower() or any(search_query in (r['text'] if isinstance(r, dict) else r).lower() for r in s['rules']))]
         if not filtered: st.caption("No matching topics found.")
         # Group topics under their category so each outer category is a single collapsible
@@ -1241,7 +1240,7 @@ def render_wiki_management():
     with tab_prefs: render_wiki_editor("preferences.md", "Preferences")
     with tab_lit:
         st.subheader("📚 My Saved Literature & External Sources")
-        render_saved_guidelines(doctor_id, search_query, col_filter)
+        render_saved_guidelines(doctor_id, search_query)
         st.divider()
         st.subheader("🔍 Search Clinical Literature (PubMed)")
         lit_query = st.text_input("Find guidelines or studies...", placeholder="e.g. SGLT2 inhibitors heart failure", key="lit_search_input")
