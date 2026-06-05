@@ -1139,67 +1139,77 @@ def render_wiki_management():
         filter_cat = col_filter.selectbox(f"Filter {title}", ["All"] + categories, key=f"filter_{filename}")
         filtered = [s for s in sections if (filter_cat == "All" or s['category'] == filter_cat) and (search_query in s['category'].lower() or search_query in s['topic'].lower() or any(search_query in (r['text'] if isinstance(r, dict) else r).lower() for r in s['rules']))]
         if not filtered: st.caption("No matching topics found.")
-        current_display_cat = None
+        # Group topics under their category so each outer category is a single collapsible
+        # panel that starts closed. (Streamlit forbids nesting expanders, so the topics
+        # inside are bordered containers rather than their own expanders.)
+        cats_in_order, cat_map = [], {}
         for i, s in enumerate(filtered):
-            if s['category'] != current_display_cat:
-                st.markdown(f"#### 📁 {s['category']}")
-                current_display_cat = s['category']
-            with st.expander(f"{s['topic']}", expanded=False):
-                new_cat, new_topic = s['category'], s['topic']
-                rule_lines = []
-                for r in s['rules']:
-                    if isinstance(r, dict):
-                        rule_lines.append(f"- {r['text']}")
-                        for k, v in r.get('attributes', {}).items(): rule_lines.append(f"  - {k}: {v}")
-                    else: rule_lines.append(f"- {r}")
-                body_text = "\n".join(rule_lines)
-                new_body = st.text_area("", value=body_text, height=200, key=f"body_ed_{filename}_{i}", label_visibility="collapsed")
-                c1, c2, _ = st.columns([1, 1, 4])
-                if c1.button("💾 Save", key=f"s_{filename}_{i}"):
-                    dummy_content = f"## {new_cat}\n### {new_topic}\n{new_body}"
-                    parsed_new = parse_wiki_sections(dummy_content)
-                    if parsed_new:
-                        new_rules = parsed_new[0]['rules']
-                        new_sections = []
-                        for orig in sections:
-                            if orig['topic'] == s['topic'] and orig['category'] == s['category']:
-                                new_sections.append({"category": new_cat, "topic": new_topic, "rules": new_rules})
-                            else: new_sections.append(orig)
-                        new_sections.sort(key=lambda x: x['category'])
-                        reconstructed = ""
-                        last_cat = None
-                        for ns in new_sections:
-                            if ns['category'] != last_cat:
-                                reconstructed += f"\n## {ns['category']}\n"
-                                last_cat = ns['category']
-                            reconstructed += f"### {ns['topic']}\n"
-                            for r in ns['rules']:
-                                if isinstance(r, dict):
-                                    reconstructed += f"- {r['text']}\n"
-                                    for k, v in r.get('attributes', {}).items(): reconstructed += f"  - {k}: {v}\n"
-                                else: reconstructed += f"- {r}\n"
-                            reconstructed += "\n"
-                        save_wiki_file_content(doctor_id, filename, reconstructed)
-                        st.success("Wiki updated.")
-                        st.rerun()
-                if c2.button("🗑 Delete", key=f"d_{filename}_{i}"):
-                    new_sections = [orig for orig in sections if not (orig['topic'] == s['topic'] and orig['category'] == s['category'])]
-                    new_sections.sort(key=lambda x: x['category'])
-                    reconstructed = ""
-                    last_cat = None
-                    for ns in new_sections:
-                        if ns['category'] != last_cat:
-                            reconstructed += f"\n## {ns['category']}\n"
-                            last_cat = ns['category']
-                        reconstructed += f"### {ns['topic']}\n"
-                        for r in ns['rules']:
+            if s['category'] not in cat_map:
+                cat_map[s['category']] = []
+                cats_in_order.append(s['category'])
+            cat_map[s['category']].append((i, s))
+        for cat in cats_in_order:
+            members = cat_map[cat]
+            # Auto-open while searching so matches aren't hidden; otherwise start closed.
+            with st.expander(f"📁 {cat}  ·  {len(members)} topic(s)", expanded=bool(search_query)):
+                for i, s in members:
+                    with st.container(border=True):
+                        st.markdown(f"**{s['topic']}**")
+                        new_cat, new_topic = s['category'], s['topic']
+                        rule_lines = []
+                        for r in s['rules']:
                             if isinstance(r, dict):
-                                reconstructed += f"- {r['text']}\n"
-                                for k, v in r.get('attributes', {}).items(): reconstructed += f"  - {k}: {v}\n"
-                            else: reconstructed += f"- {r}\n"
-                        reconstructed += "\n"
-                    save_wiki_file_content(doctor_id, filename, reconstructed)
-                    st.rerun()
+                                rule_lines.append(f"- {r['text']}")
+                                for k, v in r.get('attributes', {}).items(): rule_lines.append(f"  - {k}: {v}")
+                            else: rule_lines.append(f"- {r}")
+                        body_text = "\n".join(rule_lines)
+                        new_body = st.text_area("", value=body_text, height=200, key=f"body_ed_{filename}_{i}", label_visibility="collapsed")
+                        c1, c2, _ = st.columns([1, 1, 4])
+                        if c1.button("💾 Save", key=f"s_{filename}_{i}"):
+                            dummy_content = f"## {new_cat}\n### {new_topic}\n{new_body}"
+                            parsed_new = parse_wiki_sections(dummy_content)
+                            if parsed_new:
+                                new_rules = parsed_new[0]['rules']
+                                new_sections = []
+                                for orig in sections:
+                                    if orig['topic'] == s['topic'] and orig['category'] == s['category']:
+                                        new_sections.append({"category": new_cat, "topic": new_topic, "rules": new_rules})
+                                    else: new_sections.append(orig)
+                                new_sections.sort(key=lambda x: x['category'])
+                                reconstructed = ""
+                                last_cat = None
+                                for ns in new_sections:
+                                    if ns['category'] != last_cat:
+                                        reconstructed += f"\n## {ns['category']}\n"
+                                        last_cat = ns['category']
+                                    reconstructed += f"### {ns['topic']}\n"
+                                    for r in ns['rules']:
+                                        if isinstance(r, dict):
+                                            reconstructed += f"- {r['text']}\n"
+                                            for k, v in r.get('attributes', {}).items(): reconstructed += f"  - {k}: {v}\n"
+                                        else: reconstructed += f"- {r}\n"
+                                    reconstructed += "\n"
+                                save_wiki_file_content(doctor_id, filename, reconstructed)
+                                st.success("Wiki updated.")
+                                st.rerun()
+                        if c2.button("🗑 Delete", key=f"d_{filename}_{i}"):
+                            new_sections = [orig for orig in sections if not (orig['topic'] == s['topic'] and orig['category'] == s['category'])]
+                            new_sections.sort(key=lambda x: x['category'])
+                            reconstructed = ""
+                            last_cat = None
+                            for ns in new_sections:
+                                if ns['category'] != last_cat:
+                                    reconstructed += f"\n## {ns['category']}\n"
+                                    last_cat = ns['category']
+                                reconstructed += f"### {ns['topic']}\n"
+                                for r in ns['rules']:
+                                    if isinstance(r, dict):
+                                        reconstructed += f"- {r['text']}\n"
+                                        for k, v in r.get('attributes', {}).items(): reconstructed += f"  - {k}: {v}\n"
+                                    else: reconstructed += f"- {r}\n"
+                                reconstructed += "\n"
+                            save_wiki_file_content(doctor_id, filename, reconstructed)
+                            st.rerun()
 
     with tab_protocols: render_wiki_editor("clinical_protocols.md", "Protocols")
     with tab_prefs: render_wiki_editor("preferences.md", "Preferences")
