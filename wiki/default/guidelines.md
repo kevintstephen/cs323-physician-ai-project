@@ -35,3 +35,10 @@
   - Physician Notes: In adults with type 2 diabetes who have heart failure (HF) (with either reduced or preserved ejection fraction), an SGLT2 inhibitor is recommended for both glycemic management and prevention of HF hospitalizations (irrespective of A1C)
   - Rationale: American Diabetes Association Standards of Care 2026
   - Added: 2026-05-27
+
+## Endocrinology
+### Diabetes Mellitus
+- [ID: 73db9e] Summary of Revisions: Standards of Care in Diabetes—2026
+  - Physician Notes: - A systolic blood pressure goal <120 mmHg should be encouraged for individuals with high cardiovascular or kidney risk.
+  - File: Standards of Care in Diabetes- 2026.pdf
+  - Added: 2026-06-05

@@ -1142,6 +1142,90 @@ def render_saved_guidelines(doctor_id: str = "default", search_query: str = ""):
                         st.rerun()
 
 
+def _extract_source_text(url: str, uploaded) -> str:
+    """Gathers whatever signal we can about an external source (filename, file text, URL,
+    and fetched page title/excerpt) to feed the metadata detector. Best-effort: network or
+    decode failures are swallowed so detection still runs on the remaining hints."""
+    parts = []
+    if uploaded is not None:
+        parts.append(f"Filename: {uploaded.name}")
+        name = uploaded.name.lower()
+        if name.endswith((".txt", ".md")):
+            try:
+                parts.append("File content:\n" + uploaded.getvalue().decode("utf-8", errors="ignore")[:8000])
+            except Exception:
+                pass
+        elif name.endswith(".pdf"):
+            try:
+                import io
+                from pypdf import PdfReader
+                reader = PdfReader(io.BytesIO(uploaded.getvalue()))
+                # Title from PDF metadata is often the cleanest signal.
+                meta_title = (reader.metadata or {}).get("/Title") if reader.metadata else None
+                if meta_title:
+                    parts.append(f"PDF title: {str(meta_title).strip()}")
+                # First few pages usually carry the title/abstract — enough to classify.
+                text = ""
+                for page in reader.pages[:3]:
+                    text += (page.extract_text() or "") + "\n"
+                    if len(text) > 8000:
+                        break
+                text = re.sub(r"\s+\n", "\n", text).strip()
+                if text:
+                    parts.append("PDF content:\n" + text[:8000])
+            except Exception:
+                pass  # Fall back to the filename hint.
+    if url:
+        parts.append(f"URL: {url}")
+        try:
+            import requests
+            resp = requests.get(url, timeout=8, headers={"User-Agent": "Mozilla/5.0 (PhysicianAI)"})
+            ctype = resp.headers.get("Content-Type", "")
+            if "html" in ctype or "text" in ctype:
+                html = resp.text[:20000]
+                m = re.search(r"<title[^>]*>(.*?)</title>", html, re.IGNORECASE | re.DOTALL)
+                if m:
+                    parts.append("Page title: " + re.sub(r"\s+", " ", m.group(1)).strip())
+                body = re.sub(r"(?is)<(script|style)[^>]*>.*?</\1>", " ", html)
+                body = re.sub(r"(?s)<[^>]+>", " ", body)
+                body = re.sub(r"\s+", " ", body).strip()
+                if body:
+                    parts.append("Excerpt:\n" + body[:4000])
+        except Exception:
+            pass
+    return "\n\n".join(parts)
+
+
+def _detect_source_metadata(hint: str, provider: str) -> dict:
+    """Asks the configured LLM to infer title/category/topic for an external source.
+    Returns a dict with those keys (empty strings when undeterminable)."""
+    backend, model = get_backend(provider)
+    system = (
+        "You extract bibliographic metadata for a physician's clinical reference library. "
+        "Given whatever is known about a source (a URL, a filename, and/or text), infer its "
+        "details. Respond with ONLY a JSON object — no prose, no code fences — with keys: "
+        '"title" (the article/document name), '
+        '"category" (a broad clinical domain, e.g. Cardiology, Infectious Disease, Endocrinology, Nephrology), '
+        '"topic" (a concise subject, e.g. Heart Failure, Sepsis, Type 2 Diabetes). '
+        "Make your best clinical guess from the available text; use an empty string only if truly unknowable."
+    )
+    resp = backend.generate(model=model, system_prompt=system, wiki="",
+                            user_prompt=(hint or "No content available.")[:8000])
+    raw = (resp.content or "").strip()
+    m = re.search(r"\{.*\}", raw, re.DOTALL)
+    data = {}
+    if m:
+        try:
+            data = json.loads(m.group(0))
+        except Exception:
+            data = {}
+    return {
+        "title": str(data.get("title") or "").strip(),
+        "category": str(data.get("category") or "").strip(),
+        "topic": str(data.get("topic") or "").strip(),
+    }
+
+
 def render_wiki_management():
     st.header("📚 Doctor's Wiki & Preferences")
     st.markdown("Grounding for all agents. Review new learnings from cases, or manually edit your clinical protocols and preferences.")
@@ -1265,24 +1349,45 @@ def render_wiki_management():
                         st.rerun()
         st.divider()
         st.subheader("➕ Add External Source (URL or File)")
-        with st.form("manual_lit_form"):
-            ext_url = st.text_input("Article URL / Link")
-            ext_file = st.file_uploader("Upload Article (PDF or Text)", type=["pdf", "txt", "md"])
-            ext_title = st.text_input("Article Title / Name")
-            ext_cat = st.text_input("Category", value="External Evidence")
-            ext_topic = st.text_input("Topic", value="General")
-            ext_notes = st.text_area("Physician Notes")
-            ext_rat = st.text_area("Rationale")
-            submitted = st.form_submit_button("💾 Save External Source to Wiki")
-            if submitted:
-                if not ext_title: st.error("Please provide a title.")
-                else:
-                    attrs = {"Physician Notes": ext_notes, "Rationale": ext_rat}
-                    if ext_url: attrs["URL"] = ext_url
-                    if ext_file: attrs["File"] = ext_file.name
-                    save_guideline(ext_cat, ext_topic, ext_title, attrs, doctor_id)
-                    st.success("External source added to wiki.")
-                    st.rerun()
+        st.session_state.setdefault("ext_cat", "External Evidence")
+        st.session_state.setdefault("ext_topic", "General")
+        st.session_state.setdefault("ext_title", "")
+        ext_url = st.text_input("Article URL / Link", key="ext_url")
+        ext_file = st.file_uploader("Upload Article (PDF or Text)", type=["pdf", "txt", "md"], key="ext_file")
+        if st.button("✨ Auto-detect details", disabled=not (ext_url or ext_file),
+                     help="Infer the title, category, and topic from the link or file."):
+            with st.spinner("Analyzing source..."):
+                hint = _extract_source_text(ext_url, ext_file)
+                meta = _detect_source_metadata(hint, st.session_state.get("llm_provider", "Anthropic"))
+            if meta.get("title"): st.session_state["ext_title"] = meta["title"]
+            if meta.get("category"): st.session_state["ext_cat"] = meta["category"]
+            if meta.get("topic"): st.session_state["ext_topic"] = meta["topic"]
+            if any(meta.values()):
+                st.success("Details detected — review and edit below, then save.")
+            else:
+                st.warning("Couldn't determine details automatically — please fill them in.")
+            st.rerun()
+        # Keys are pre-seeded above, so auto-detect can populate these before re-render.
+        ext_title = st.text_input("Article Title / Name", key="ext_title")
+        ext_cat = st.text_input("Category", key="ext_cat")
+        ext_topic = st.text_input("Topic", key="ext_topic")
+        ext_notes = st.text_area("Physician Notes", key="ext_notes")
+        ext_rat = st.text_area("Rationale", key="ext_rat")
+        if st.button("💾 Save External Source to Wiki", type="primary"):
+            if not ext_title.strip():
+                st.error("Please provide a title (or use Auto-detect).")
+            else:
+                attrs = {}
+                if ext_notes.strip(): attrs["Physician Notes"] = ext_notes.strip()
+                if ext_rat.strip(): attrs["Rationale"] = ext_rat.strip()
+                if ext_url.strip(): attrs["URL"] = ext_url.strip()
+                if ext_file is not None: attrs["File"] = ext_file.name
+                save_guideline(ext_cat.strip() or "External Evidence", ext_topic.strip() or "General",
+                               ext_title.strip(), attrs, doctor_id)
+                for _k in ("ext_url", "ext_file", "ext_title", "ext_cat", "ext_topic", "ext_notes", "ext_rat"):
+                    st.session_state.pop(_k, None)
+                st.success("External source added to wiki.")
+                st.rerun()
 
 # ---------------------------------------------------------------------------
 # Dashboard (Kanban)
