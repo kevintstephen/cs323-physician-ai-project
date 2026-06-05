@@ -26,19 +26,10 @@
   - Rationale: Standard 30mL/kg bolus risks volume overload in my HF/ESRD population; I defer the fixed volume in favor of weight-adjusted, response-guided resuscitation.
   - Added: 2026-05-27
 
-## Diabetes
-### Standards of Care
-- [ID: 0d2d97] Standards of Care in Diabetes- 2026
-  - Key Recommendation: In adults with type 2 diabetes who have heart failure (HF) (with either reduced or preserved ejection fraction), an SGLT2 inhibitor is recommended for both glycemic management and prevention of HF hospitalizations (irrespective of A1C)
-  - URL: https://diabetesjournals.org/care/issue/49/Supplement_1
-  - Decision: Adopted
-  - Physician Notes: In adults with type 2 diabetes who have heart failure (HF) (with either reduced or preserved ejection fraction), an SGLT2 inhibitor is recommended for both glycemic management and prevention of HF hospitalizations (irrespective of A1C)
-  - Rationale: American Diabetes Association Standards of Care 2026
-  - Added: 2026-05-27
-
 ## Endocrinology
 ### Diabetes Mellitus
-- [ID: 73db9e] Summary of Revisions: Standards of Care in Diabetes—2026
-  - Physician Notes: - A systolic blood pressure goal <120 mmHg should be encouraged for individuals with high cardiovascular or kidney risk.
+- [ID: 4e6846] Standards of Care in Diabetes—2026
+  - Physician Notes: - a systolic blood pressure goal <120 mmHg should be encouraged for individuals with high cardiovascular or kidney risk
+  - URL: https://doi.org/10.2337/dc26-SREV
   - File: Standards of Care in Diabetes- 2026.pdf
   - Added: 2026-06-05

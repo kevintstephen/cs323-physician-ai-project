@@ -1196,6 +1196,24 @@ def _extract_source_text(url: str, uploaded) -> str:
     return "\n\n".join(parts)
 
 
+_DOI_RE = re.compile(r"\b10\.\d{4,9}/[-._;()/:A-Za-z0-9]+", re.IGNORECASE)
+_URL_RE = re.compile(r"https?://[^\s<>\"')]+", re.IGNORECASE)
+
+
+def _find_paper_link(text: str) -> str:
+    """Recovers a link to the paper from extracted source text — a DOI (preferred, as the
+    stable doi.org resolver) or otherwise the first http(s) URL. Returns '' if none found."""
+    if not text:
+        return ""
+    m = _DOI_RE.search(text)
+    if m:
+        return "https://doi.org/" + m.group(0).rstrip(".),;")
+    m = _URL_RE.search(text)
+    if m:
+        return m.group(0).rstrip(".),;")
+    return ""
+
+
 def _detect_source_metadata(hint: str, provider: str) -> dict:
     """Asks the configured LLM to infer title/category/topic for an external source.
     Returns a dict with those keys (empty strings when undeterminable)."""
@@ -1224,6 +1242,31 @@ def _detect_source_metadata(hint: str, provider: str) -> dict:
         "category": str(data.get("category") or "").strip(),
         "topic": str(data.get("topic") or "").strip(),
     }
+
+
+def _save_external_source(doctor_id: str, nonce: int):
+    """on_click handler for the external-source form. Persists the entry, then resets the
+    form by bumping the widget-key nonce so the next run builds fresh, empty widgets — the
+    only way to reliably clear text fields *and* the file uploader together."""
+    g = lambda suffix: st.session_state.get(f"ext_{suffix}_{nonce}")
+    title = (g("title") or "").strip()
+    if not title:
+        st.session_state["_ext_msg"] = ("error", "Please provide a title (or use Auto-detect).")
+        return
+    attrs = {}
+    if (g("notes") or "").strip(): attrs["Physician Notes"] = g("notes").strip()
+    if (g("rat") or "").strip(): attrs["Rationale"] = g("rat").strip()
+    if (g("url") or "").strip(): attrs["URL"] = g("url").strip()
+    _f = g("file")
+    if _f is not None: attrs["File"] = _f.name
+    cat = (g("cat") or "").strip() or "External Evidence"
+    topic = (g("topic") or "").strip() or "General"
+    save_guideline(cat, topic, title, attrs, doctor_id)
+    # Drop this nonce's keys and advance to a fresh set → all fields (incl. upload) reset.
+    for suffix in ("url", "file", "title", "cat", "topic", "notes", "rat"):
+        st.session_state.pop(f"ext_{suffix}_{nonce}", None)
+    st.session_state["ext_nonce"] = nonce + 1
+    st.session_state["_ext_msg"] = ("success", "External source added to wiki.")
 
 
 def render_wiki_management():
@@ -1349,45 +1392,55 @@ def render_wiki_management():
                         st.rerun()
         st.divider()
         st.subheader("➕ Add External Source (URL or File)")
-        st.session_state.setdefault("ext_cat", "External Evidence")
-        st.session_state.setdefault("ext_topic", "General")
-        st.session_state.setdefault("ext_title", "")
-        ext_url = st.text_input("Article URL / Link", key="ext_url")
-        ext_file = st.file_uploader("Upload Article (PDF or Text)", type=["pdf", "txt", "md"], key="ext_file")
+        # Widget keys carry a nonce; bumping it on save yields fresh, empty widgets so the
+        # whole form (text fields and the file uploader) clears reliably.
+        nonce = st.session_state.setdefault("ext_nonce", 0)
+        k_url, k_file = f"ext_url_{nonce}", f"ext_file_{nonce}"
+        k_title, k_cat, k_topic = f"ext_title_{nonce}", f"ext_cat_{nonce}", f"ext_topic_{nonce}"
+        k_notes, k_rat = f"ext_notes_{nonce}", f"ext_rat_{nonce}"
+        st.session_state.setdefault(k_cat, "External Evidence")
+        st.session_state.setdefault(k_topic, "General")
+        # A link recovered from the source (e.g. a DOI inside an uploaded PDF) is seeded into
+        # the URL field here — before the widget is created — so it persists and gets saved.
+        if st.session_state.get("_ext_detected_url") and not st.session_state.get(k_url):
+            st.session_state[k_url] = st.session_state.pop("_ext_detected_url")
+        ext_url = st.text_input("Article URL / Link", key=k_url)
+        ext_file = st.file_uploader("Upload Article (PDF or Text)", type=["pdf", "txt", "md"], key=k_file)
         if st.button("✨ Auto-detect details", disabled=not (ext_url or ext_file),
-                     help="Infer the title, category, and topic from the link or file."):
+                     help="Infer the title, category, topic, and a link to the paper from the link or file."):
             with st.spinner("Analyzing source..."):
                 hint = _extract_source_text(ext_url, ext_file)
                 meta = _detect_source_metadata(hint, st.session_state.get("llm_provider", "Anthropic"))
-            if meta.get("title"): st.session_state["ext_title"] = meta["title"]
-            if meta.get("category"): st.session_state["ext_cat"] = meta["category"]
-            if meta.get("topic"): st.session_state["ext_topic"] = meta["topic"]
-            if any(meta.values()):
-                st.success("Details detected — review and edit below, then save.")
+            if meta.get("title"): st.session_state[k_title] = meta["title"]
+            if meta.get("category"): st.session_state[k_cat] = meta["category"]
+            if meta.get("topic"): st.session_state[k_topic] = meta["topic"]
+            # If no URL was entered, try to recover a DOI/link from the source so the paper
+            # can be reopened later. Deferred via _ext_detected_url since the URL widget is
+            # already instantiated above and can't be set directly this run.
+            found_link = ""
+            if not (ext_url or "").strip():
+                found_link = _find_paper_link(hint)
+                if found_link:
+                    st.session_state["_ext_detected_url"] = found_link
+            if any(meta.values()) or found_link:
+                msg = "Details detected — review and edit below, then save."
+                if found_link:
+                    msg += f" Found paper link: {found_link}"
+                st.success(msg)
             else:
                 st.warning("Couldn't determine details automatically — please fill them in.")
             st.rerun()
-        # Keys are pre-seeded above, so auto-detect can populate these before re-render.
-        ext_title = st.text_input("Article Title / Name", key="ext_title")
-        ext_cat = st.text_input("Category", key="ext_cat")
-        ext_topic = st.text_input("Topic", key="ext_topic")
-        ext_notes = st.text_area("Physician Notes", key="ext_notes")
-        ext_rat = st.text_area("Rationale", key="ext_rat")
-        if st.button("💾 Save External Source to Wiki", type="primary"):
-            if not ext_title.strip():
-                st.error("Please provide a title (or use Auto-detect).")
-            else:
-                attrs = {}
-                if ext_notes.strip(): attrs["Physician Notes"] = ext_notes.strip()
-                if ext_rat.strip(): attrs["Rationale"] = ext_rat.strip()
-                if ext_url.strip(): attrs["URL"] = ext_url.strip()
-                if ext_file is not None: attrs["File"] = ext_file.name
-                save_guideline(ext_cat.strip() or "External Evidence", ext_topic.strip() or "General",
-                               ext_title.strip(), attrs, doctor_id)
-                for _k in ("ext_url", "ext_file", "ext_title", "ext_cat", "ext_topic", "ext_notes", "ext_rat"):
-                    st.session_state.pop(_k, None)
-                st.success("External source added to wiki.")
-                st.rerun()
+        st.text_input("Article Title / Name", key=k_title)
+        st.text_input("Category", key=k_cat)
+        st.text_input("Topic", key=k_topic)
+        st.text_area("Physician Notes", key=k_notes)
+        st.text_area("Rationale", key=k_rat)
+        # Save runs in an on_click callback so the form can be reset before re-render.
+        st.button("💾 Save External Source to Wiki", type="primary",
+                  on_click=_save_external_source, args=(doctor_id, nonce))
+        _ext_msg = st.session_state.pop("_ext_msg", None)
+        if _ext_msg:
+            (st.success if _ext_msg[0] == "success" else st.error)(_ext_msg[1])
 
 # ---------------------------------------------------------------------------
 # Dashboard (Kanban)
